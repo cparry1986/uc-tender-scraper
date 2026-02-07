@@ -8,9 +8,10 @@ export interface RawTender {
   currency: string;
   buyer: string;
   location: string;
-  source: "find-a-tender" | "contracts-finder";
+  source: "find-a-tender" | "contracts-finder" | "bidstats";
   url: string;
   cpvCodes: string[];
+  isPipeline?: boolean;
 }
 
 export interface ScoreBreakdown {
@@ -47,6 +48,12 @@ export interface ScoredTender extends RawTender {
   region: string;
 }
 
+export interface SourceHealth {
+  name: string;
+  ok: boolean;
+  count: number;
+}
+
 export interface ScrapeResult {
   tenders: ScoredTender[];
   stats: {
@@ -57,11 +64,13 @@ export interface ScrapeResult {
     mediumPriority: number;
     lowPriority: number;
     skipCount: number;
+    pipelineCount: number;
     pipelineValue: number;
     avgScore: number;
     scrapedAt: string;
     daysSearched: number;
   };
+  sourceHealth: SourceHealth[];
 }
 
 // ── Analytics types ────────────────────────────────────────────────────
@@ -100,6 +109,11 @@ export interface InsightCard {
   type: "positive" | "neutral" | "action";
 }
 
+export interface SourceBreakdownData {
+  source: string;
+  count: number;
+}
+
 export interface AnalyticsData {
   regions: RegionData[];
   procurementRoutes: ProcurementRouteData[];
@@ -107,4 +121,5 @@ export interface AnalyticsData {
   timeline: TimelineEntry[];
   buyerTypes: BuyerTypeData[];
   insights: InsightCard[];
+  sourceBreakdown: SourceBreakdownData[];
 }

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const minScore = Number(params.get("minScore")) || 0;
 
   try {
-    const raw = await collectTenders(days);
+    const { tenders: raw, sourceHealth } = await collectTenders(days);
     const scored = scoreTenders(raw);
 
     const eligible = scored.filter((t) => !t.excluded);
@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
             eligible.reduce((s, t) => s + t.score.total, 0) / eligible.length
           )
         : 0;
+    const pipelineCount = scored.filter((t) => t.isPipeline).length;
 
     const result: ScrapeResult = {
       tenders:
@@ -44,11 +45,13 @@ export async function GET(request: NextRequest) {
         skipCount: scored.filter(
           (t) => t.excluded || t.priority === "SKIP"
         ).length,
+        pipelineCount,
         pipelineValue,
         avgScore,
         scrapedAt: new Date().toISOString(),
         daysSearched: days,
       },
+      sourceHealth,
     };
 
     return NextResponse.json(result);

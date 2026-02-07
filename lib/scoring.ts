@@ -17,6 +17,7 @@ const SUPPLY_KEYWORDS = [
   /electricity\s+framework/i,
   /power\s+purchase/i,
   /\bPPA\b/,
+  /\bCPPA\b/,
   /half[\s-]?hourly/i,
   /\bHH\s+supply/i,
   /renewable\s+energy\s+supply/i,
@@ -25,13 +26,23 @@ const SUPPLY_KEYWORDS = [
   /utility\s+supply/i,
   /gas\s+and\s+electricity/i,
   /electricity\s+and\s+gas/i,
+  /supply\s+of\s+gas\s+and\s+electricity/i,
+  /supply\s+of\s+utilities/i,
   /licensed\s+supplier/i,
   /flexible\s+purchas/i,
+  /flexible\s+procurement\s+and\s+supply/i,
   /electricity\s+procurement/i,
   /energy\s+procurement/i,
   /renewable\s+supply/i,
   /green\s+tariff/i,
   /energy\s+framework/i,
+  /electricity\s+contract/i,
+  /energy\s+contract/i,
+  /electricity\s+tender/i,
+  /energy\s+tender/i,
+  /public\s+buying\s+organisation/i,
+  /\bPBO\b/,
+  /electricity\s+portfolio/i,
 ];
 
 function passesRelevanceGate(text: string): boolean {
@@ -221,7 +232,13 @@ function scoreFit(text: string, cpvCodes: string[]): number {
   for (const [pattern, points] of FIT_KEYWORDS) {
     if (pattern.test(text)) score += points;
   }
-  if (cpvCodes.some((c) => c.startsWith("09310"))) score += 4;
+  // CPV code matching - expanded set
+  if (cpvCodes.some((c) => c.startsWith("09310"))) score += 4; // Electricity
+  else if (cpvCodes.some((c) => c.startsWith("09300"))) score += 3; // Electricity, heating, solar, nuclear
+  else if (cpvCodes.some((c) => c.startsWith("65310"))) score += 3; // Electricity distribution
+  else if (cpvCodes.some((c) => c.startsWith("31682"))) score += 2; // Electricity supplies
+  else if (cpvCodes.some((c) => c.startsWith("65000"))) score += 2; // Public utilities
+  else if (cpvCodes.some((c) => c.startsWith("09121"))) score += 2; // Coal, lignite, peat, and other
   return Math.min(score, 30);
 }
 
