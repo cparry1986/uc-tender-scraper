@@ -108,10 +108,17 @@ export default function TenderCard({
           >
             {t.effortEstimate} Effort
           </span>
+          {t.isPipeline && (
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 border-dashed">
+              UPCOMING
+            </span>
+          )}
           <span className="text-[10px] text-slate-600">
             {t.source === "find-a-tender"
               ? "Find a Tender"
-              : "Contracts Finder"}
+              : t.source === "bidstats"
+                ? "Bidstats"
+                : "Contracts Finder"}
           </span>
           {t.procurementRoute !== "Not Specified" && (
             <span className="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">
@@ -219,7 +226,9 @@ export default function TenderCard({
             View on{" "}
             {t.source === "find-a-tender"
               ? "Find a Tender"
-              : "Contracts Finder"}{" "}
+              : t.source === "bidstats"
+                ? "Bidstats"
+                : "Contracts Finder"}{" "}
             &#8599;
           </a>
         </div>

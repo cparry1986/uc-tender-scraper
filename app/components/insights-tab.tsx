@@ -13,7 +13,7 @@ import {
   Cell,
   Legend,
 } from "recharts";
-import { ScrapeResult, AnalyticsData, InsightCard } from "@/lib/types";
+import { ScrapeResult, AnalyticsData, InsightCard, SourceHealth } from "@/lib/types";
 import { computeAnalytics } from "@/lib/analytics";
 
 const TEAL = "#00DCBC";
@@ -89,6 +89,52 @@ function InsightCards({ insights }: { insights: InsightCard[] }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function DataQualityCard({ sourceHealth }: { sourceHealth?: SourceHealth[] }) {
+  if (!sourceHealth || sourceHealth.length === 0) return null;
+
+  const healthy = sourceHealth.filter((s) => s.ok).length;
+  const total = sourceHealth.length;
+  const pct = Math.round((healthy / total) * 100);
+
+  return (
+    <ChartCard title="Data Quality">
+      <div className="flex items-center gap-4 mb-4">
+        <div
+          className={`text-3xl font-heading font-bold ${
+            pct === 100
+              ? "text-emerald-400"
+              : pct >= 50
+                ? "text-yellow-400"
+                : "text-red-400"
+          }`}
+        >
+          {pct}%
+        </div>
+        <div className="text-xs text-slate-400">
+          {healthy}/{total} sources responding
+        </div>
+      </div>
+      <div className="space-y-2">
+        {sourceHealth.map((s) => (
+          <div key={s.name} className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-block w-2 h-2 rounded-full ${
+                  s.ok ? "bg-emerald-400" : "bg-red-400"
+                }`}
+              />
+              <span className="text-xs text-slate-400">{s.name}</span>
+            </div>
+            <span className="text-xs text-slate-500">
+              {s.count} {s.count === 1 ? "tender" : "tenders"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </ChartCard>
   );
 }
 
@@ -221,6 +267,39 @@ export default function InsightsTab({ result }: { result: ScrapeResult }) {
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
+
+        {/* Source Breakdown */}
+        <ChartCard title="Tenders by Source">
+          <ResponsiveContainer width="100%" height={280}>
+            <PieChart>
+              <Pie
+                data={analytics.sourceBreakdown}
+                dataKey="count"
+                nameKey="source"
+                cx="50%"
+                cy="50%"
+                innerRadius={55}
+                outerRadius={90}
+                paddingAngle={3}
+                stroke="none"
+              >
+                {analytics.sourceBreakdown.map((_, i) => (
+                  <Cell
+                    key={i}
+                    fill={PIE_COLORS[i % PIE_COLORS.length]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip {...tooltipStyle} />
+              <Legend
+                wrapperStyle={{ fontSize: "11px", color: "#94A3B8" }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        {/* Data Quality */}
+        <DataQualityCard sourceHealth={result.sourceHealth} />
 
         {/* Buyer Type */}
         <ChartCard title="Buyer Type Analysis" className="lg:col-span-2">

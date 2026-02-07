@@ -7,6 +7,7 @@ import {
   TimelineEntry,
   BuyerTypeData,
   InsightCard,
+  SourceBreakdownData,
 } from "./types";
 
 function formatVal(v: number): string {
@@ -204,6 +205,24 @@ function generateInsights(
   return insights.slice(0, 4);
 }
 
+// ── Source breakdown ──────────────────────────────────────────────────
+
+function computeSourceBreakdown(tenders: ScoredTender[]): SourceBreakdownData[] {
+  const map = new Map<string, number>();
+  for (const t of tenders) {
+    const label =
+      t.source === "find-a-tender"
+        ? "Find a Tender"
+        : t.source === "contracts-finder"
+          ? "Contracts Finder"
+          : "Bidstats";
+    map.set(label, (map.get(label) || 0) + 1);
+  }
+  return Array.from(map.entries())
+    .map(([source, count]) => ({ source, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
 // ── Public API ─────────────────────────────────────────────────────────
 
 export function computeAnalytics(tenders: ScoredTender[]): AnalyticsData {
@@ -214,6 +233,7 @@ export function computeAnalytics(tenders: ScoredTender[]): AnalyticsData {
   const timeline = computeTimeline(eligible);
   const buyerTypes = computeBuyerTypes(eligible);
   const insights = generateInsights(eligible, regions, buyerTypes);
+  const sourceBreakdown = computeSourceBreakdown(tenders);
 
   return {
     regions,
@@ -222,5 +242,6 @@ export function computeAnalytics(tenders: ScoredTender[]): AnalyticsData {
     timeline,
     buyerTypes,
     insights,
+    sourceBreakdown,
   };
 }

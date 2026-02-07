@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const raw = await collectTenders(1);
+    const { tenders: raw, sourceHealth } = await collectTenders(1);
     const scored = scoreTenders(raw);
     const eligible = scored.filter((t) => !t.excluded);
     const highMedium = eligible.filter(
@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
             eligible.reduce((s, t) => s + t.score.total, 0) / eligible.length
           )
         : 0;
+    const pipelineCount = scored.filter((t) => t.isPipeline).length;
 
     const result: ScrapeResult = {
       tenders: scored,
@@ -44,11 +45,13 @@ export async function GET(request: NextRequest) {
         skipCount: scored.filter(
           (t) => t.excluded || t.priority === "SKIP"
         ).length,
+        pipelineCount,
         pipelineValue,
         avgScore,
         scrapedAt: new Date().toISOString(),
         daysSearched: 1,
       },
+      sourceHealth,
     };
 
     await sendDigestEmail(result);

@@ -1,6 +1,6 @@
 "use client";
 
-import { ScrapeResult } from "@/lib/types";
+import { ScrapeResult, SourceHealth } from "@/lib/types";
 
 function formatValue(v: number): string {
   if (v >= 1_000_000) return `\u00A3${(v / 1_000_000).toFixed(1)}m`;
@@ -8,7 +8,34 @@ function formatValue(v: number): string {
   return `\u00A3${v}`;
 }
 
-export default function HeroStats({ stats }: { stats: ScrapeResult["stats"] }) {
+function SourceHealthIndicator({ sources }: { sources: SourceHealth[] }) {
+  return (
+    <div className="glass-card p-3 mb-4 flex flex-wrap items-center gap-4">
+      <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
+        Sources
+      </span>
+      {sources.map((s) => (
+        <div key={s.name} className="flex items-center gap-1.5">
+          <span
+            className={`inline-block w-2 h-2 rounded-full ${
+              s.ok ? "bg-emerald-400" : "bg-red-400"
+            }`}
+          />
+          <span className="text-[11px] text-slate-400">{s.name}</span>
+          <span className="text-[10px] text-slate-600">({s.count})</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function HeroStats({
+  stats,
+  sourceHealth,
+}: {
+  stats: ScrapeResult["stats"];
+  sourceHealth?: SourceHealth[];
+}) {
   const cards = [
     {
       label: "Opportunities",
@@ -39,11 +66,11 @@ export default function HeroStats({ stats }: { stats: ScrapeResult["stats"] }) {
       border: "border-uc-teal/30",
     },
     {
-      label: "To Review",
-      value: String(stats.lowPriority),
-      sub: "lower priority",
-      color: "text-uc-yellow",
-      border: "border-uc-yellow/30",
+      label: "Pipeline",
+      value: String(stats.pipelineCount || 0),
+      sub: "upcoming notices",
+      color: "text-uc-purple",
+      border: "border-uc-purple/30",
     },
     {
       label: "Excluded",
@@ -55,21 +82,26 @@ export default function HeroStats({ stats }: { stats: ScrapeResult["stats"] }) {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-      {cards.map((card, i) => (
-        <div
-          key={card.label}
-          className={`stat-card border-t-2 ${card.border} opacity-0 animate-fade-in-up stagger-${i + 1}`}
-        >
-          <div className={`text-2xl font-heading font-bold ${card.color}`}>
-            {card.value}
+    <div>
+      {sourceHealth && sourceHealth.length > 0 && (
+        <SourceHealthIndicator sources={sourceHealth} />
+      )}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        {cards.map((card, i) => (
+          <div
+            key={card.label}
+            className={`stat-card border-t-2 ${card.border} opacity-0 animate-fade-in-up stagger-${i + 1}`}
+          >
+            <div className={`text-2xl font-heading font-bold ${card.color}`}>
+              {card.value}
+            </div>
+            <div className="text-xs text-slate-400 mt-1 font-medium">
+              {card.label}
+            </div>
+            <div className="text-[10px] text-slate-500 mt-0.5">{card.sub}</div>
           </div>
-          <div className="text-xs text-slate-400 mt-1 font-medium">
-            {card.label}
-          </div>
-          <div className="text-[10px] text-slate-500 mt-0.5">{card.sub}</div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
