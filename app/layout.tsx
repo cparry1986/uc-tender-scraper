@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "UrbanChain Tender Scraper",
-  description: "Automated UK public sector electricity tender monitoring",
+  title: "UrbanChain Tender Intelligence",
+  description:
+    "Automated UK public sector electricity tender monitoring and scoring for UrbanChain",
 };
 
 export default function RootLayout({
@@ -12,18 +14,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body
-        style={{
-          margin: 0,
-          padding: 0,
-          background: "#0B1120",
-          color: "#E2E8F0",
-          fontFamily:
-            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif",
-        }}
-      >
-        {children}
-      </body>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-body">{children}</body>
     </html>
   );
 }

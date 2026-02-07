@@ -7,7 +7,6 @@ import { ScrapeResult } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  // Verify cron secret in production
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
@@ -19,6 +18,19 @@ export async function GET(request: NextRequest) {
     const raw = await collectTenders(1);
     const scored = scoreTenders(raw);
     const eligible = scored.filter((t) => !t.excluded);
+    const highMedium = eligible.filter(
+      (t) => t.priority === "HIGH" || t.priority === "MEDIUM"
+    );
+    const pipelineValue = highMedium.reduce(
+      (sum, t) => sum + (t.value || 0),
+      0
+    );
+    const avgScore =
+      eligible.length > 0
+        ? Math.round(
+            eligible.reduce((s, t) => s + t.score.total, 0) / eligible.length
+          )
+        : 0;
 
     const result: ScrapeResult = {
       tenders: scored,
@@ -26,11 +38,14 @@ export async function GET(request: NextRequest) {
         totalFound: raw.length,
         afterDedup: raw.length,
         afterExclusions: eligible.length,
-        highPriority: eligible.filter((t) => t.score.total >= 65).length,
-        mediumPriority: eligible.filter(
-          (t) => t.score.total >= 40 && t.score.total < 65
+        highPriority: eligible.filter((t) => t.priority === "HIGH").length,
+        mediumPriority: eligible.filter((t) => t.priority === "MEDIUM").length,
+        lowPriority: eligible.filter((t) => t.priority === "LOW").length,
+        skipCount: scored.filter(
+          (t) => t.excluded || t.priority === "SKIP"
         ).length,
-        lowPriority: eligible.filter((t) => t.score.total < 40).length,
+        pipelineValue,
+        avgScore,
         scrapedAt: new Date().toISOString(),
         daysSearched: 1,
       },
