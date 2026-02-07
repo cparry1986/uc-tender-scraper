@@ -4,8 +4,9 @@ import { useState } from "react";
 import { ScrapeResult } from "@/lib/types";
 import PipelineTab from "./components/pipeline-tab";
 import InsightsTab from "./components/insights-tab";
+import FrameworkTab from "./components/framework-tab";
 
-type Tab = "pipeline" | "insights";
+type Tab = "pipeline" | "insights" | "frameworks";
 
 export default function Dashboard() {
   const [result, setResult] = useState<ScrapeResult | null>(null);
@@ -80,20 +81,27 @@ export default function Dashboard() {
         </div>
 
         {/* Tab nav */}
-        {result && (
-          <div className="relative max-w-6xl mx-auto px-4 flex gap-1 -mb-px">
-            <TabButton
-              active={activeTab === "pipeline"}
-              onClick={() => setActiveTab("pipeline")}
-              label="Pipeline"
-            />
-            <TabButton
-              active={activeTab === "insights"}
-              onClick={() => setActiveTab("insights")}
-              label="Insights"
-            />
-          </div>
-        )}
+        <div className="relative max-w-6xl mx-auto px-4 flex gap-1 -mb-px">
+          {result && (
+            <>
+              <TabButton
+                active={activeTab === "pipeline"}
+                onClick={() => setActiveTab("pipeline")}
+                label="Pipeline"
+              />
+              <TabButton
+                active={activeTab === "insights"}
+                onClick={() => setActiveTab("insights")}
+                label="Insights"
+              />
+            </>
+          )}
+          <TabButton
+            active={activeTab === "frameworks"}
+            onClick={() => setActiveTab("frameworks")}
+            label="Frameworks"
+          />
+        </div>
       </header>
 
       {/* Main content */}
@@ -104,7 +112,10 @@ export default function Dashboard() {
           </div>
         )}
 
+        {activeTab === "frameworks" && <FrameworkTab />}
+
         {result &&
+          activeTab !== "frameworks" &&
           (activeTab === "pipeline" ? (
             <PipelineTab result={result} />
           ) : (
@@ -112,7 +123,7 @@ export default function Dashboard() {
           ))}
 
         {/* Empty state */}
-        {!result && !loading && (
+        {!result && !loading && activeTab !== "frameworks" && (
           <div className="text-center py-24">
             <div className="inline-block mb-6">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-uc-navy to-uc-purple flex items-center justify-center">

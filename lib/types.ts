@@ -130,3 +130,57 @@ export interface AnalyticsData {
   insights: InsightCard[];
   sourceBreakdown: SourceBreakdownData[];
 }
+
+// ── Framework Intelligence types ─────────────────────────────────────
+
+export type FrameworkStatus =
+  | "active"
+  | "expiring-soon"
+  | "re-procuring"
+  | "expired"
+  | "unknown";
+
+export interface TrackedFramework {
+  id: string;
+  name: string;
+  operator: string;
+  reference: string;
+  description: string;
+  estimatedValue: string;
+  currentStatus: FrameworkStatus;
+  expiryDate: string | null;
+  nextProcurementWindow: string | null;
+  relevance: string;
+  actionRequired: string;
+  ftsSignals: FrameworkSignal[];
+  tier: "critical" | "high" | "medium";
+}
+
+export interface FrameworkSignal {
+  title: string;
+  url: string;
+  date: string;
+  type: "re-procurement" | "market-engagement" | "award" | "expiry-notice" | "pipeline";
+}
+
+export interface ContractExpiry {
+  id: string;
+  title: string;
+  buyer: string;
+  value: number | null;
+  awardDate: string;
+  expiryDate: string | null;
+  estimatedExpiryDate: string | null;
+  region: string;
+  source: string;
+  url: string;
+  daysUntilExpiry: number | null;
+}
+
+export interface FrameworkIntelligence {
+  frameworks: TrackedFramework[];
+  contractExpiries: ContractExpiry[];
+  upcomingReprocurements: number;
+  expiringNext6Months: number;
+  totalFrameworkValue: string;
+}
