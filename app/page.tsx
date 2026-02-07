@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { ScoredTender, ScrapeResult } from "@/lib/types";
+import { ScrapeResult } from "@/lib/types";
+import PipelineTab from "./components/pipeline-tab";
+import InsightsTab from "./components/insights-tab";
 
-type Priority = "all" | "high" | "medium" | "low";
+type Tab = "pipeline" | "insights";
 
 export default function Dashboard() {
   const [result, setResult] = useState<ScrapeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(3);
-  const [filter, setFilter] = useState<Priority>("all");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("pipeline");
 
   async function runScrape() {
     setLoading(true);
@@ -28,189 +29,102 @@ export default function Dashboard() {
     }
   }
 
-  const eligible = result?.tenders.filter((t) => !t.excluded) ?? [];
-  const filtered =
-    filter === "all"
-      ? eligible
-      : filter === "high"
-        ? eligible.filter((t) => t.score.total >= 65)
-        : filter === "medium"
-          ? eligible.filter(
-              (t) => t.score.total >= 40 && t.score.total < 65
-            )
-          : eligible.filter((t) => t.score.total < 40);
-
   return (
-    <div style={{ minHeight: "100vh", background: "#0B1120" }}>
+    <div className="min-h-screen bg-uc-bg">
       {/* Header */}
-      <header
-        style={{
-          background: "#00378E",
-          padding: "20px 32px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "16px",
-        }}
-      >
-        <div>
-          <h1 style={{ margin: 0, fontSize: "24px", fontWeight: 700, color: "#FFF" }}>
-            UrbanChain Tender Scraper
-          </h1>
-          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#00DCBC" }}>
-            CPV 09310000 &mdash; Electricity Supply Monitoring
-          </p>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <label style={{ fontSize: "13px", color: "#94A3B8" }}>
-            Days:&nbsp;
-            <select
-              value={days}
-              onChange={(e) => setDays(Number(e.target.value))}
-              style={{
-                background: "#1E293B",
-                color: "#E2E8F0",
-                border: "1px solid #334155",
-                borderRadius: "6px",
-                padding: "6px 10px",
-                fontSize: "13px",
-              }}
+      <header className="bg-gradient-to-r from-uc-navy to-uc-purple relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(0,220,188,0.08),transparent_60%)]" />
+        <div className="relative max-w-6xl mx-auto px-4 py-5 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="font-heading text-xl md:text-2xl font-bold text-white tracking-tight">
+              UrbanChain Tender Intelligence
+            </h1>
+            <p className="text-uc-teal text-xs mt-1 font-medium">
+              CPV 09310000 &mdash; Electricity Supply Monitoring
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-slate-400 flex items-center gap-2">
+              Days:
+              <select
+                value={days}
+                onChange={(e) => setDays(Number(e.target.value))}
+                className="bg-white/[0.06] border border-white/[0.1] rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-uc-teal/50"
+              >
+                {[1, 3, 7, 14, 30].map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              onClick={runScrape}
+              disabled={loading}
+              className={`relative px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
+                loading
+                  ? "bg-slate-700 text-slate-400 cursor-not-allowed"
+                  : "bg-uc-teal text-uc-bg hover:shadow-lg hover:shadow-uc-teal/20 hover:-translate-y-0.5 active:translate-y-0"
+              }`}
             >
-              {[1, 3, 7, 14, 30].map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            onClick={runScrape}
-            disabled={loading}
-            style={{
-              background: loading ? "#334155" : "#00DCBC",
-              color: loading ? "#94A3B8" : "#000",
-              border: "none",
-              borderRadius: "8px",
-              padding: "10px 24px",
-              fontWeight: 700,
-              fontSize: "14px",
-              cursor: loading ? "not-allowed" : "pointer",
-            }}
-          >
-            {loading ? "Scraping..." : "Run Scrape"}
-          </button>
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="inline-block w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                  Scraping...
+                </span>
+              ) : (
+                "Run Scrape"
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Tab nav */}
+        {result && (
+          <div className="relative max-w-6xl mx-auto px-4 flex gap-1 -mb-px">
+            <TabButton
+              active={activeTab === "pipeline"}
+              onClick={() => setActiveTab("pipeline")}
+              label="Pipeline"
+            />
+            <TabButton
+              active={activeTab === "insights"}
+              onClick={() => setActiveTab("insights")}
+              label="Insights"
+            />
+          </div>
+        )}
       </header>
 
-      <main style={{ maxWidth: "960px", margin: "0 auto", padding: "24px 16px" }}>
+      {/* Main content */}
+      <main className="max-w-6xl mx-auto px-4 py-6">
         {error && (
-          <div
-            style={{
-              background: "#7F1D1D",
-              border: "1px solid #DC2626",
-              borderRadius: "8px",
-              padding: "12px 16px",
-              marginBottom: "16px",
-              color: "#FCA5A5",
-              fontSize: "14px",
-            }}
-          >
+          <div className="bg-red-900/30 border border-red-500/30 rounded-xl p-4 mb-6 text-red-300 text-sm">
             {error}
           </div>
         )}
 
-        {/* Stats */}
-        {result && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
-              gap: "12px",
-              marginBottom: "24px",
-            }}
-          >
-            <StatCard label="Total Found" value={result.stats.totalFound} />
-            <StatCard label="Eligible" value={result.stats.afterExclusions} />
-            <StatCard
-              label="High Priority"
-              value={result.stats.highPriority}
-              accent="#00DCBC"
-            />
-            <StatCard
-              label="Medium"
-              value={result.stats.mediumPriority}
-              accent="#F59E0B"
-            />
-            <StatCard label="Low" value={result.stats.lowPriority} accent="#6B7280" />
-            <StatCard
-              label="Excluded"
-              value={
-                result.tenders.filter((t) => t.excluded).length
-              }
-              accent="#EF4444"
-            />
-          </div>
-        )}
+        {result &&
+          (activeTab === "pipeline" ? (
+            <PipelineTab result={result} />
+          ) : (
+            <InsightsTab result={result} />
+          ))}
 
-        {/* Filter Tabs */}
-        {result && (
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              marginBottom: "20px",
-              flexWrap: "wrap",
-            }}
-          >
-            {(["all", "high", "medium", "low"] as Priority[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setFilter(p)}
-                style={{
-                  background: filter === p ? "#00378E" : "#1E293B",
-                  color: filter === p ? "#FFF" : "#94A3B8",
-                  border: filter === p ? "1px solid #00DCBC" : "1px solid #334155",
-                  borderRadius: "6px",
-                  padding: "8px 16px",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  textTransform: "capitalize",
-                }}
-              >
-                {p === "all" ? `All (${eligible.length})` : p}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Tender Cards */}
-        {filtered.map((t) => (
-          <TenderCard
-            key={t.id}
-            tender={t}
-            expanded={expandedId === t.id}
-            onToggle={() =>
-              setExpandedId(expandedId === t.id ? null : t.id)
-            }
-          />
-        ))}
-
-        {/* Empty State */}
+        {/* Empty state */}
         {!result && !loading && (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "80px 20px",
-              color: "#64748B",
-            }}
-          >
-            <p style={{ fontSize: "18px", marginBottom: "8px" }}>
-              UrbanChain Tender Scraper
-            </p>
-            <p style={{ fontSize: "14px" }}>
-              Click &ldquo;Run Scrape&rdquo; to search for electricity supply tenders
+          <div className="text-center py-24">
+            <div className="inline-block mb-6">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-uc-navy to-uc-purple flex items-center justify-center">
+                <span className="text-2xl">&#9889;</span>
+              </div>
+            </div>
+            <h2 className="font-heading text-xl font-bold text-slate-300 mb-2">
+              UrbanChain Tender Intelligence
+            </h2>
+            <p className="text-sm text-slate-500 max-w-md mx-auto">
+              Search UK public sector tender APIs for electricity supply
+              opportunities matched to UrbanChain&apos;s business model.
             </p>
           </div>
         )}
@@ -219,288 +133,25 @@ export default function Dashboard() {
   );
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────
-
-function StatCard({
+function TabButton({
+  active,
+  onClick,
   label,
-  value,
-  accent,
 }: {
+  active: boolean;
+  onClick: () => void;
   label: string;
-  value: number;
-  accent?: string;
 }) {
   return (
-    <div
-      style={{
-        background: "#1E293B",
-        borderRadius: "10px",
-        padding: "16px",
-        textAlign: "center",
-        borderTop: accent ? `3px solid ${accent}` : "3px solid #334155",
-      }}
+    <button
+      onClick={onClick}
+      className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg transition-colors ${
+        active
+          ? "bg-uc-bg text-uc-teal border-t border-x border-uc-teal/20"
+          : "text-slate-400 hover:text-slate-200"
+      }`}
     >
-      <div
-        style={{
-          fontSize: "28px",
-          fontWeight: 700,
-          color: accent || "#E2E8F0",
-        }}
-      >
-        {value}
-      </div>
-      <div style={{ fontSize: "12px", color: "#94A3B8", marginTop: "4px" }}>
-        {label}
-      </div>
-    </div>
-  );
-}
-
-function TenderCard({
-  tender,
-  expanded,
-  onToggle,
-}: {
-  tender: ScoredTender;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  const t = tender;
-  const priorityColor =
-    t.score.total >= 65
-      ? "#00DCBC"
-      : t.score.total >= 40
-        ? "#F59E0B"
-        : "#6B7280";
-  const priorityLabel =
-    t.score.total >= 65 ? "HIGH" : t.score.total >= 40 ? "MEDIUM" : "LOW";
-
-  const formatVal = (v: number | null) => {
-    if (!v) return "Not disclosed";
-    if (v >= 1_000_000) return `\u00A3${(v / 1_000_000).toFixed(1)}m`;
-    if (v >= 1_000) return `\u00A3${(v / 1_000).toFixed(0)}k`;
-    return `\u00A3${v}`;
-  };
-
-  return (
-    <div
-      style={{
-        background: "#1E293B",
-        borderRadius: "10px",
-        marginBottom: "12px",
-        borderLeft: `4px solid ${priorityColor}`,
-        overflow: "hidden",
-      }}
-    >
-      {/* Header row — always visible */}
-      <div
-        onClick={onToggle}
-        style={{
-          padding: "16px 20px",
-          cursor: "pointer",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: "12px",
-        }}
-      >
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "6px",
-              flexWrap: "wrap",
-            }}
-          >
-            <span
-              style={{
-                background: priorityColor,
-                color: "#000",
-                padding: "2px 8px",
-                borderRadius: "4px",
-                fontSize: "11px",
-                fontWeight: 700,
-              }}
-            >
-              {priorityLabel} ({t.score.total})
-            </span>
-            <span style={{ color: "#64748B", fontSize: "12px" }}>
-              {t.source === "find-a-tender"
-                ? "Find a Tender"
-                : "Contracts Finder"}
-            </span>
-          </div>
-          <div style={{ fontSize: "15px", fontWeight: 600, color: "#E2E8F0" }}>
-            {t.title}
-          </div>
-          <div
-            style={{
-              fontSize: "13px",
-              color: "#94A3B8",
-              marginTop: "6px",
-              display: "flex",
-              gap: "16px",
-              flexWrap: "wrap",
-            }}
-          >
-            <span>{t.buyer || "Unknown buyer"}</span>
-            <span>{formatVal(t.value)}</span>
-            <span>{t.deadlineDate ? new Date(t.deadlineDate).toLocaleDateString("en-GB") : "No deadline"}</span>
-          </div>
-        </div>
-        <span
-          style={{
-            color: "#64748B",
-            fontSize: "20px",
-            lineHeight: 1,
-            flexShrink: 0,
-          }}
-        >
-          {expanded ? "\u25B2" : "\u25BC"}
-        </span>
-      </div>
-
-      {/* Expanded detail */}
-      {expanded && (
-        <div
-          style={{
-            padding: "0 20px 20px",
-            borderTop: "1px solid #334155",
-          }}
-        >
-          {/* Score breakdown */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4, 1fr)",
-              gap: "8px",
-              margin: "16px 0",
-            }}
-          >
-            <ScoreBar label="Value" score={t.score.value} max={30} />
-            <ScoreBar label="Timeline" score={t.score.timeline} max={20} />
-            <ScoreBar label="Keywords" score={t.score.keywords} max={30} />
-            <ScoreBar label="Geography" score={t.score.geography} max={20} />
-          </div>
-
-          {/* Description */}
-          {t.description && (
-            <p
-              style={{
-                fontSize: "13px",
-                color: "#94A3B8",
-                lineHeight: 1.6,
-                margin: "12px 0",
-              }}
-            >
-              {t.description.length > 500
-                ? t.description.slice(0, 500) + "..."
-                : t.description}
-            </p>
-          )}
-
-          {/* Metadata */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "8px",
-              fontSize: "13px",
-              color: "#94A3B8",
-              margin: "12px 0",
-            }}
-          >
-            <div>
-              <strong style={{ color: "#64748B" }}>Location:</strong>{" "}
-              {t.location || "Not specified"}
-            </div>
-            <div>
-              <strong style={{ color: "#64748B" }}>Published:</strong>{" "}
-              {t.publishedDate
-                ? new Date(t.publishedDate).toLocaleDateString("en-GB")
-                : "Unknown"}
-            </div>
-            <div>
-              <strong style={{ color: "#64748B" }}>CPV Codes:</strong>{" "}
-              {t.cpvCodes.length > 0 ? t.cpvCodes.join(", ") : "None"}
-            </div>
-            <div>
-              <strong style={{ color: "#64748B" }}>Source ID:</strong> {t.id}
-            </div>
-          </div>
-
-          <a
-            href={t.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: "inline-block",
-              marginTop: "8px",
-              background: "#00378E",
-              color: "#FFF",
-              padding: "8px 20px",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            View on {t.source === "find-a-tender" ? "Find a Tender" : "Contracts Finder"} &#8599;
-          </a>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ScoreBar({
-  label,
-  score,
-  max,
-}: {
-  label: string;
-  score: number;
-  max: number;
-}) {
-  const pct = Math.round((score / max) * 100);
-  const color =
-    pct >= 75 ? "#00DCBC" : pct >= 50 ? "#F59E0B" : "#6B7280";
-
-  return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          fontSize: "11px",
-          color: "#94A3B8",
-          marginBottom: "4px",
-        }}
-      >
-        <span>{label}</span>
-        <span>
-          {score}/{max}
-        </span>
-      </div>
-      <div
-        style={{
-          background: "#0F172A",
-          borderRadius: "4px",
-          height: "6px",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            width: `${pct}%`,
-            height: "100%",
-            background: color,
-            borderRadius: "4px",
-          }}
-        />
-      </div>
-    </div>
+      {label}
+    </button>
   );
 }

@@ -14,17 +14,37 @@ export interface RawTender {
 }
 
 export interface ScoreBreakdown {
+  fit: number;
   value: number;
   timeline: number;
-  keywords: number;
+  winProbability: number;
   geography: number;
+  strategic: number;
   total: number;
 }
+
+export type Recommendation =
+  | "Bid - Strong Fit"
+  | "Bid - Worth Pursuing"
+  | "Monitor - Watch for Calloffs"
+  | "Review - Needs Assessment"
+  | "Skip";
+
+export type EffortEstimate = "Low" | "Medium" | "High";
+
+export type Priority = "HIGH" | "MEDIUM" | "LOW" | "SKIP";
 
 export interface ScoredTender extends RawTender {
   score: ScoreBreakdown;
   excluded: boolean;
   exclusionReason: string | null;
+  recommendation: Recommendation;
+  recommendationWhy: string;
+  effortEstimate: EffortEstimate;
+  priority: Priority;
+  procurementRoute: string;
+  buyerType: string;
+  region: string;
 }
 
 export interface ScrapeResult {
@@ -36,7 +56,55 @@ export interface ScrapeResult {
     highPriority: number;
     mediumPriority: number;
     lowPriority: number;
+    skipCount: number;
+    pipelineValue: number;
+    avgScore: number;
     scrapedAt: string;
     daysSearched: number;
   };
+}
+
+// ── Analytics types ────────────────────────────────────────────────────
+
+export interface RegionData {
+  region: string;
+  count: number;
+  totalValue: number;
+}
+
+export interface ProcurementRouteData {
+  route: string;
+  count: number;
+  avgScore: number;
+}
+
+export interface ValueBand {
+  band: string;
+  count: number;
+  isSweet: boolean;
+}
+
+export interface TimelineEntry {
+  week: string;
+  count: number;
+}
+
+export interface BuyerTypeData {
+  type: string;
+  count: number;
+  totalValue: number;
+}
+
+export interface InsightCard {
+  text: string;
+  type: "positive" | "neutral" | "action";
+}
+
+export interface AnalyticsData {
+  regions: RegionData[];
+  procurementRoutes: ProcurementRouteData[];
+  valueBands: ValueBand[];
+  timeline: TimelineEntry[];
+  buyerTypes: BuyerTypeData[];
+  insights: InsightCard[];
 }
