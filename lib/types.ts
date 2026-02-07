@@ -8,7 +8,14 @@ export interface RawTender {
   currency: string;
   buyer: string;
   location: string;
-  source: "find-a-tender" | "contracts-finder" | "bidstats";
+  source:
+    | "find-a-tender"
+    | "contracts-finder"
+    | "bidstats"
+    | "pcs"
+    | "sell2wales"
+    | "d3-tenders"
+    | "the-chest";
   url: string;
   cpvCodes: string[];
   isPipeline?: boolean;

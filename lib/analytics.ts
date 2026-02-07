@@ -207,15 +207,20 @@ function generateInsights(
 
 // ── Source breakdown ──────────────────────────────────────────────────
 
+const SOURCE_LABELS: Record<string, string> = {
+  "find-a-tender": "Find a Tender",
+  "contracts-finder": "Contracts Finder",
+  bidstats: "Bidstats",
+  pcs: "PCS (Scotland)",
+  sell2wales: "Sell2Wales",
+  "d3-tenders": "D3 Tenders",
+  "the-chest": "The Chest (NW)",
+};
+
 function computeSourceBreakdown(tenders: ScoredTender[]): SourceBreakdownData[] {
   const map = new Map<string, number>();
   for (const t of tenders) {
-    const label =
-      t.source === "find-a-tender"
-        ? "Find a Tender"
-        : t.source === "contracts-finder"
-          ? "Contracts Finder"
-          : "Bidstats";
+    const label = SOURCE_LABELS[t.source] || t.source;
     map.set(label, (map.get(label) || 0) + 1);
   }
   return Array.from(map.entries())
