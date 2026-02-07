@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ScoredTender, ScrapeResult } from "@/lib/types";
+import { ScoredTender, ScrapeResult, AwardNotice } from "@/lib/types";
 import HeroStats from "./hero-stats";
 import FilterBar, { Filters, DEFAULT_FILTERS, applyFilters } from "./filter-bar";
 import TenderCard from "./tender-card";
@@ -11,6 +11,7 @@ export default function PipelineTab({ result }: { result: ScrapeResult }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showLow, setShowLow] = useState(false);
   const [showPipeline, setShowPipeline] = useState(true);
+  const [showAwards, setShowAwards] = useState(false);
 
   const filtered = applyFilters(result.tenders, filters);
   const pipelineTenders = filtered.filter((t) => t.isPipeline);
@@ -150,6 +151,86 @@ export default function PipelineTab({ result }: { result: ScrapeResult }) {
           ))}
         </Section>
       )}
+
+      {/* Recent Awards — Who Won */}
+      {result.recentAwards && result.recentAwards.length > 0 && (
+        <div className="mb-8">
+          <div
+            className="flex items-center gap-2 mb-4 pb-2 border-b border-uc-navy/30 cursor-pointer select-none"
+            onClick={() => setShowAwards(!showAwards)}
+          >
+            <span>&#127942;</span>
+            <h2 className="font-heading font-bold text-base text-uc-navy">
+              Recent Awards — Who Won
+            </h2>
+            <span className="text-xs text-slate-500 ml-1">
+              ({result.recentAwards.length})
+            </span>
+            <span className="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded ml-1">
+              Competitor intelligence
+            </span>
+            <span className="ml-auto text-xs text-slate-500">
+              {showAwards ? "\u25B2" : "\u25BC"}
+            </span>
+          </div>
+          {showAwards && (
+            <div className="glass-card p-4">
+              <p className="text-[11px] text-slate-500 mb-3">
+                Recent electricity supply contract awards — see who&apos;s winning and at what value.
+              </p>
+              {result.recentAwards.slice(0, 25).map((a, i) => (
+                <AwardRow key={i} award={a} />
+              ))}
+              {result.recentAwards.length > 25 && (
+                <p className="text-[10px] text-slate-600 text-center mt-2">
+                  + {result.recentAwards.length - 25} more
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatAwardVal(v: number | null): string {
+  if (!v) return "Undisclosed";
+  if (v >= 1_000_000) return `\u00A3${(v / 1_000_000).toFixed(1)}m`;
+  if (v >= 1_000) return `\u00A3${(v / 1_000).toFixed(0)}k`;
+  return `\u00A3${v}`;
+}
+
+function AwardRow({ award }: { award: AwardNotice }) {
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-white/[0.03] last:border-0">
+      <div className="flex-1 min-w-0">
+        <a
+          href={award.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-slate-300 hover:text-uc-teal transition-colors leading-snug block truncate"
+        >
+          {award.title}
+        </a>
+        <div className="text-[10px] text-slate-500 flex flex-wrap gap-x-3 mt-0.5">
+          <span>{award.buyer || "Unknown buyer"}</span>
+          {award.region && <span>{award.region}</span>}
+          {award.awardDate && (
+            <span>
+              {new Date(award.awardDate).toLocaleDateString("en-GB")}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="text-right shrink-0">
+        <div className="text-xs font-semibold text-uc-teal">
+          {award.winner}
+        </div>
+        <div className="text-[10px] text-slate-500">
+          {formatAwardVal(award.value)}
+        </div>
+      </div>
     </div>
   );
 }

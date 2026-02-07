@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const minScore = Number(params.get("minScore")) || 0;
 
   try {
-    const { tenders: raw, sourceHealth } = await collectTenders(days);
+    const { tenders: raw, sourceHealth, recentAwards } = await collectTenders(days);
     const scored = scoreTenders(raw);
 
     const eligible = scored.filter((t) => !t.excluded);
@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
         daysSearched: days,
       },
       sourceHealth,
+      recentAwards,
     };
 
     return NextResponse.json(result);
