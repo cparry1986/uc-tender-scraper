@@ -385,6 +385,434 @@ function monthNum(m: string): string {
   return months[m.toLowerCase().slice(0, 3)] || "01";
 }
 
+// ── Public Contracts Scotland (PCS) ───────────────────────────────────
+
+const PCS_QUERIES = [
+  "electricity+supply",
+  "energy+supply",
+  "electricity+framework",
+  "supply+of+electricity",
+  "gas+and+electricity",
+];
+
+async function fetchPCS(): Promise<RawTender[]> {
+  const seen = new Map<string, RawTender>();
+
+  for (const q of PCS_QUERIES) {
+    const url = `https://www.publiccontractsscotland.gov.uk/Search/Search_MainPage.aspx?Search_String=${q}&Status=Open`;
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Accept: "text/html",
+          "User-Agent":
+            "UrbanChain-TenderScraper/2.0 (electricity-supply-monitoring)",
+        },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) continue;
+
+      const html = await res.text();
+      const tenders = parsePCSHtml(html);
+      for (const t of tenders) {
+        if (!seen.has(t.id)) {
+          seen.set(t.id, t);
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+function parsePCSHtml(html: string): RawTender[] {
+  const tenders: RawTender[] = [];
+  // PCS uses table-based layout with links to notice details
+  const noticePattern =
+    /<a[^>]+href="[^"]*(?:Notice|Search_Detail)[^"]*(?:\?|&amp;)ID=(\d+)[^"]*"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+
+  while ((match = noticePattern.exec(html)) !== null) {
+    const noticeId = match[1];
+    const linkText = match[2].replace(/<[^>]+>/g, "").trim();
+    if (!linkText || linkText.length < 10) continue;
+
+    const id = `pcs-${noticeId}`;
+    if (tenders.some((t) => t.id === id)) continue;
+
+    // Extract surrounding context for buyer and value
+    const context = html.slice(
+      Math.max(0, match.index - 500),
+      match.index + match[0].length + 500
+    );
+    const buyerMatch = context.match(
+      /(?:Organisation|Buyer|Authority)[:\s]*([^<\n]{5,80})/i
+    );
+    const valueMatch = context.match(
+      /[\u00A3\xA3]([0-9,.]+)\s*(m|k|million|thousand)?/i
+    );
+    let value: number | null = null;
+    if (valueMatch) {
+      const num = parseFloat(valueMatch[1].replace(/,/g, ""));
+      const mult = valueMatch[2]?.toLowerCase();
+      if (mult === "m" || mult === "million") value = num * 1_000_000;
+      else if (mult === "k" || mult === "thousand") value = num * 1_000;
+      else value = num;
+    }
+    const dateMatch = context.match(
+      /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})/i
+    );
+    const deadlineMatch = context.match(
+      /(?:deadline|closing)[:\s]*(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})/i
+    );
+
+    tenders.push({
+      id,
+      title: linkText,
+      description: "",
+      publishedDate: dateMatch
+        ? `${dateMatch[3]}-${monthNum(dateMatch[2])}-${dateMatch[1].padStart(2, "0")}`
+        : "",
+      deadlineDate: deadlineMatch
+        ? `${deadlineMatch[3]}-${monthNum(deadlineMatch[2])}-${deadlineMatch[1].padStart(2, "0")}`
+        : null,
+      value,
+      currency: "GBP",
+      buyer: buyerMatch ? buyerMatch[1].trim() : "",
+      location: "Scotland",
+      source: "pcs",
+      url: `https://www.publiccontractsscotland.gov.uk/Search/Search_Detail.aspx?ID=${noticeId}`,
+      cpvCodes: [],
+    });
+  }
+
+  return tenders;
+}
+
+// ── Sell2Wales (RSS Feed) ────────────────────────────────────────────
+
+async function fetchSell2Wales(): Promise<RawTender[]> {
+  const tenders: RawTender[] = [];
+  const rssUrls = [
+    "https://www.sell2wales.gov.wales/RSSFeed/RSS.aspx?Ession=electricity+supply",
+    "https://www.sell2wales.gov.wales/RSSFeed/RSS.aspx?Ession=energy+supply",
+    "https://www.sell2wales.gov.wales/RSSFeed/RSS.aspx?Ession=electricity+framework",
+    "https://www.sell2wales.gov.wales/RSSFeed/RSS.aspx?Ession=gas+and+electricity",
+  ];
+  const seen = new Map<string, RawTender>();
+
+  for (const url of rssUrls) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Accept: "application/rss+xml, application/xml, text/xml",
+          "User-Agent":
+            "UrbanChain-TenderScraper/2.0 (electricity-supply-monitoring)",
+        },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) continue;
+
+      const xml = await res.text();
+      const items = parseSell2WalesRss(xml);
+      for (const t of items) {
+        if (!seen.has(t.id)) {
+          seen.set(t.id, t);
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+function parseSell2WalesRss(xml: string): RawTender[] {
+  const tenders: RawTender[] = [];
+  const itemPattern = /<item>([\s\S]*?)<\/item>/gi;
+  let match;
+
+  while ((match = itemPattern.exec(xml)) !== null) {
+    const item = match[1];
+    const title = extractXmlTag(item, "title");
+    const link = extractXmlTag(item, "link");
+    const description = extractXmlTag(item, "description");
+    const pubDate = extractXmlTag(item, "pubDate");
+
+    if (!title || !link) continue;
+
+    // Extract ID from link
+    const idMatch = link.match(/[?&]ID=(\d+)/i) || link.match(/\/(\d+)\/?$/);
+    const noticeId = idMatch ? idMatch[1] : title.replace(/[^a-z0-9]/gi, "-").slice(0, 40);
+
+    // Parse value from description/title
+    const valueMatch = (description || title).match(
+      /[\u00A3\xA3]([0-9,.]+)\s*(m|k|million|thousand)?/i
+    );
+    let value: number | null = null;
+    if (valueMatch) {
+      const num = parseFloat(valueMatch[1].replace(/,/g, ""));
+      const mult = valueMatch[2]?.toLowerCase();
+      if (mult === "m" || mult === "million") value = num * 1_000_000;
+      else if (mult === "k" || mult === "thousand") value = num * 1_000;
+      else value = num;
+    }
+
+    // Parse buyer from description
+    const buyerMatch = (description || "").match(
+      /(?:published\s+by|buyer|organisation)[:\s]*([^<\n.]{5,80})/i
+    );
+
+    // Parse pubDate
+    let publishedDate = "";
+    if (pubDate) {
+      try {
+        publishedDate = new Date(pubDate).toISOString().split("T")[0];
+      } catch {
+        publishedDate = "";
+      }
+    }
+
+    tenders.push({
+      id: `s2w-${noticeId}`,
+      title,
+      description: description || "",
+      publishedDate,
+      deadlineDate: null,
+      value,
+      currency: "GBP",
+      buyer: buyerMatch ? buyerMatch[1].trim() : "",
+      location: "Wales",
+      source: "sell2wales",
+      url: link,
+      cpvCodes: [],
+    });
+  }
+
+  return tenders;
+}
+
+function extractXmlTag(xml: string, tag: string): string {
+  const match = xml.match(
+    new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, "i")
+  );
+  return match ? match[1].trim() : "";
+}
+
+// ── D3 Tenders (CPV Division 09 - Energy) ───────────────────────────
+
+async function fetchD3Tenders(): Promise<RawTender[]> {
+  const seen = new Map<string, RawTender>();
+  const urls = [
+    "https://d3tenders.co.uk/cpv/09",       // Energy, mining, fuels
+    "https://d3tenders.co.uk/cpv/093",      // Electricity & related
+    "https://d3tenders.co.uk/cpv/09310000", // Electricity
+    "https://d3tenders.co.uk/cpv/65310000", // Electricity distribution
+  ];
+
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Accept: "text/html",
+          "User-Agent":
+            "UrbanChain-TenderScraper/2.0 (electricity-supply-monitoring)",
+        },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) continue;
+
+      const html = await res.text();
+      const tenders = parseD3Html(html);
+      for (const t of tenders) {
+        if (!seen.has(t.id)) {
+          seen.set(t.id, t);
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+function parseD3Html(html: string): RawTender[] {
+  const tenders: RawTender[] = [];
+  // D3 Tenders lists contracts with links to detail pages
+  const linkPattern =
+    /<a[^>]+href="(\/(?:tender|contract|notice)s?\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+
+  while ((match = linkPattern.exec(html)) !== null) {
+    const path = match[1];
+    const linkText = match[2].replace(/<[^>]+>/g, "").trim();
+    if (!linkText || linkText.length < 10) continue;
+
+    const id = `d3-${path.replace(/[^a-z0-9]/gi, "-")}`;
+    if (tenders.some((t) => t.id === id)) continue;
+
+    const context = html.slice(
+      Math.max(0, match.index - 500),
+      match.index + match[0].length + 500
+    );
+    const buyerMatch = context.match(
+      /(?:buyer|organisation|authority|contracting)[:\s]*([^<\n]{5,80})/i
+    );
+    const valueMatch = context.match(
+      /[\u00A3\xA3]([0-9,.]+)\s*(m|k|million|thousand)?/i
+    );
+    let value: number | null = null;
+    if (valueMatch) {
+      const num = parseFloat(valueMatch[1].replace(/,/g, ""));
+      const mult = valueMatch[2]?.toLowerCase();
+      if (mult === "m" || mult === "million") value = num * 1_000_000;
+      else if (mult === "k" || mult === "thousand") value = num * 1_000;
+      else value = num;
+    }
+    const dateMatch = context.match(
+      /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})/i
+    );
+    const deadlineMatch = context.match(
+      /(?:deadline|closing|closes)[:\s]*(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})/i
+    );
+
+    // Extract CPV code from context
+    const cpvMatch = context.match(/(09\d{6}|65\d{6}|31682\d{3})/);
+    const cpvCodes = cpvMatch ? [cpvMatch[1]] : [];
+
+    tenders.push({
+      id,
+      title: linkText,
+      description: "",
+      publishedDate: dateMatch
+        ? `${dateMatch[3]}-${monthNum(dateMatch[2])}-${dateMatch[1].padStart(2, "0")}`
+        : "",
+      deadlineDate: deadlineMatch
+        ? `${deadlineMatch[3]}-${monthNum(deadlineMatch[2])}-${deadlineMatch[1].padStart(2, "0")}`
+        : null,
+      value,
+      currency: "GBP",
+      buyer: buyerMatch ? buyerMatch[1].trim() : "",
+      location: "",
+      source: "d3-tenders",
+      url: `https://d3tenders.co.uk${path}`,
+      cpvCodes,
+    });
+  }
+
+  return tenders;
+}
+
+// ── The Chest (Proactis / Due North — NW England) ────────────────────
+
+const CHEST_QUERIES = [
+  "electricity",
+  "energy supply",
+  "electricity supply",
+  "gas and electricity",
+  "utility supply",
+];
+
+async function fetchTheChest(): Promise<RawTender[]> {
+  const seen = new Map<string, RawTender>();
+
+  for (const q of CHEST_QUERIES) {
+    // The Chest (Due North/Proactis) search endpoint
+    const url =
+      `https://procontract.due-north.com/Opportunities/Index?` +
+      `keywords=${encodeURIComponent(q)}&status=Open`;
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Accept: "text/html",
+          "User-Agent":
+            "UrbanChain-TenderScraper/2.0 (electricity-supply-monitoring)",
+        },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) continue;
+
+      const html = await res.text();
+      const tenders = parseChestHtml(html);
+      for (const t of tenders) {
+        if (!seen.has(t.id)) {
+          seen.set(t.id, t);
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+function parseChestHtml(html: string): RawTender[] {
+  const tenders: RawTender[] = [];
+  // Proactis/Due North uses links to opportunity detail pages
+  const linkPattern =
+    /<a[^>]+href="[^"]*(?:Opportunity|Detail)[^"]*[?&](?:id|opportunityId)=([a-f0-9-]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+
+  while ((match = linkPattern.exec(html)) !== null) {
+    const opportunityId = match[1];
+    const linkText = match[2].replace(/<[^>]+>/g, "").trim();
+    if (!linkText || linkText.length < 10) continue;
+
+    const id = `chest-${opportunityId}`;
+    if (tenders.some((t) => t.id === id)) continue;
+
+    const context = html.slice(
+      Math.max(0, match.index - 500),
+      match.index + match[0].length + 500
+    );
+    const buyerMatch = context.match(
+      /(?:buyer|organisation|authority|published\s+by)[:\s]*([^<\n]{5,80})/i
+    );
+    const valueMatch = context.match(
+      /[\u00A3\xA3]([0-9,.]+)\s*(m|k|million|thousand)?/i
+    );
+    let value: number | null = null;
+    if (valueMatch) {
+      const num = parseFloat(valueMatch[1].replace(/,/g, ""));
+      const mult = valueMatch[2]?.toLowerCase();
+      if (mult === "m" || mult === "million") value = num * 1_000_000;
+      else if (mult === "k" || mult === "thousand") value = num * 1_000;
+      else value = num;
+    }
+    const dateMatch = context.match(
+      /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})/i
+    );
+    const deadlineMatch = context.match(
+      /(?:deadline|closing|closes|return\s+date)[:\s]*(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})/i
+    );
+
+    tenders.push({
+      id,
+      title: linkText,
+      description: "",
+      publishedDate: dateMatch
+        ? `${dateMatch[3]}-${monthNum(dateMatch[2])}-${dateMatch[1].padStart(2, "0")}`
+        : "",
+      deadlineDate: deadlineMatch
+        ? `${deadlineMatch[3]}-${monthNum(deadlineMatch[2])}-${deadlineMatch[1].padStart(2, "0")}`
+        : null,
+      value,
+      currency: "GBP",
+      buyer: buyerMatch ? buyerMatch[1].trim() : "",
+      location: "North West",
+      source: "the-chest",
+      url: `https://procontract.due-north.com/Opportunities/Opportunity?id=${opportunityId}`,
+      cpvCodes: [],
+    });
+  }
+
+  return tenders;
+}
+
 // ── Deduplication ──────────────────────────────────────────────────────
 
 function dedup(tenders: RawTender[]): RawTender[] {
@@ -406,13 +834,25 @@ export interface CollectionResult {
 }
 
 export async function collectTenders(days: number): Promise<CollectionResult> {
-  const [fatResult, fatPipelineResult, cfResult, bsResult] =
-    await Promise.allSettled([
-      fetchFindATender(days),
-      fetchFindATenderPipeline(Math.max(days, 14)),
-      fetchContractsFinder(days),
-      fetchBidstats(),
-    ]);
+  const [
+    fatResult,
+    fatPipelineResult,
+    cfResult,
+    bsResult,
+    pcsResult,
+    s2wResult,
+    d3Result,
+    chestResult,
+  ] = await Promise.allSettled([
+    fetchFindATender(days),
+    fetchFindATenderPipeline(Math.max(days, 14)),
+    fetchContractsFinder(days),
+    fetchBidstats(),
+    fetchPCS(),
+    fetchSell2Wales(),
+    fetchD3Tenders(),
+    fetchTheChest(),
+  ]);
 
   const fatTenders =
     fatResult.status === "fulfilled" ? fatResult.value : [];
@@ -424,6 +864,14 @@ export async function collectTenders(days: number): Promise<CollectionResult> {
     cfResult.status === "fulfilled" ? cfResult.value : [];
   const bsTenders =
     bsResult.status === "fulfilled" ? bsResult.value : [];
+  const pcsTenders =
+    pcsResult.status === "fulfilled" ? pcsResult.value : [];
+  const s2wTenders =
+    s2wResult.status === "fulfilled" ? s2wResult.value : [];
+  const d3Tenders =
+    d3Result.status === "fulfilled" ? d3Result.value : [];
+  const chestTenders =
+    chestResult.status === "fulfilled" ? chestResult.value : [];
 
   const sourceHealth: SourceHealth[] = [
     {
@@ -446,9 +894,38 @@ export async function collectTenders(days: number): Promise<CollectionResult> {
       ok: bsResult.status === "fulfilled" && bsTenders.length > 0,
       count: bsTenders.length,
     },
+    {
+      name: "PCS (Scotland)",
+      ok: pcsResult.status === "fulfilled",
+      count: pcsTenders.length,
+    },
+    {
+      name: "Sell2Wales",
+      ok: s2wResult.status === "fulfilled",
+      count: s2wTenders.length,
+    },
+    {
+      name: "D3 Tenders",
+      ok: d3Result.status === "fulfilled",
+      count: d3Tenders.length,
+    },
+    {
+      name: "The Chest (NW)",
+      ok: chestResult.status === "fulfilled",
+      count: chestTenders.length,
+    },
   ];
 
-  const all = [...fatTenders, ...fatPipeline, ...cfTenders, ...bsTenders];
+  const all = [
+    ...fatTenders,
+    ...fatPipeline,
+    ...cfTenders,
+    ...bsTenders,
+    ...pcsTenders,
+    ...s2wTenders,
+    ...d3Tenders,
+    ...chestTenders,
+  ];
   const deduped = dedup(all);
 
   return { tenders: deduped, sourceHealth };

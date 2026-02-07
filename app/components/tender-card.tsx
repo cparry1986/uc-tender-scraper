@@ -37,6 +37,16 @@ const EFFORT_STYLES: Record<string, string> = {
   High: "bg-red-500/10 text-red-400",
 };
 
+const SOURCE_LABELS: Record<string, string> = {
+  "find-a-tender": "Find a Tender",
+  "contracts-finder": "Contracts Finder",
+  bidstats: "Bidstats",
+  pcs: "PCS (Scotland)",
+  sell2wales: "Sell2Wales",
+  "d3-tenders": "D3 Tenders",
+  "the-chest": "The Chest (NW)",
+};
+
 const DIMENSION_COLORS = [
   { key: "fit" as const, label: "Fit", max: 30, color: "#00DCBC" },
   { key: "value" as const, label: "Value", max: 20, color: "#00378E" },
@@ -114,11 +124,7 @@ export default function TenderCard({
             </span>
           )}
           <span className="text-[10px] text-slate-600">
-            {t.source === "find-a-tender"
-              ? "Find a Tender"
-              : t.source === "bidstats"
-                ? "Bidstats"
-                : "Contracts Finder"}
+            {SOURCE_LABELS[t.source] || t.source}
           </span>
           {t.procurementRoute !== "Not Specified" && (
             <span className="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">
@@ -223,12 +229,7 @@ export default function TenderCard({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 bg-uc-navy hover:bg-uc-navy/80 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
           >
-            View on{" "}
-            {t.source === "find-a-tender"
-              ? "Find a Tender"
-              : t.source === "bidstats"
-                ? "Bidstats"
-                : "Contracts Finder"}{" "}
+            View on {SOURCE_LABELS[t.source] || t.source}{" "}
             &#8599;
           </a>
         </div>
