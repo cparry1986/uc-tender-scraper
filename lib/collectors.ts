@@ -3,17 +3,39 @@ import { RawTender, SourceHealth } from "./types";
 // ── Config ─────────────────────────────────────────────────────────────
 
 const SEARCH_KEYWORDS = [
+  // Core supply terms
   "electricity supply",
   "supply of electricity",
   "energy supply",
+  "supply of energy",
+  "electricity",
+  // Frameworks & procurement
   "electricity framework",
-  "power purchase agreement",
-  "gas and electricity",
-  "electricity procurement",
-  "renewable energy supply",
-  "electricity contract",
   "energy framework",
+  "electricity procurement",
+  "energy procurement",
+  "electricity contract",
+  "energy contract",
   "utility supply",
+  "utilities contract",
+  // Commercial models
+  "power purchase agreement",
+  "sleeved",
+  "demand pool",
+  "flexible purchasing",
+  "half hourly",
+  "HH supply",
+  "HH meter",
+  // Renewables / green
+  "renewable energy",
+  "green energy",
+  "REGO",
+  "green new deal",
+  "net zero energy",
+  "carbon neutral energy",
+  // Combined fuels
+  "gas and electricity",
+  "electricity and gas",
 ];
 
 function daysAgoISO(days: number): string {
@@ -71,7 +93,7 @@ async function fetchFindATenderPipeline(days: number): Promise<RawTender[]> {
   const until = todayISO();
   const seen = new Map<string, RawTender>();
 
-  for (const keyword of SEARCH_KEYWORDS.slice(0, 4)) {
+  for (const keyword of SEARCH_KEYWORDS.slice(0, 8)) {
     const url =
       `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?` +
       `publishedFrom=${since}&publishedTo=${until}` +
@@ -280,6 +302,15 @@ const BIDSTATS_QUERIES = [
   "power+purchase+agreement",
   "supply+of+electricity",
   "gas+and+electricity",
+  "electricity+contract",
+  "sleeved+electricity",
+  "demand+pool",
+  "half+hourly+electricity",
+  "green+new+deal",
+  "renewable+energy+supply",
+  "utility+supply",
+  "net+zero+energy",
+  "electricity+meter",
 ];
 
 async function fetchBidstats(): Promise<RawTender[]> {
@@ -377,6 +408,102 @@ function parseBidstatsHtml(html: string): RawTender[] {
   return tenders;
 }
 
+// ── FTS Award Notices (who won previous contracts) ───────────────────
+
+export interface AwardNotice {
+  title: string;
+  buyer: string;
+  winner: string;
+  value: number | null;
+  awardDate: string;
+  region: string;
+  url: string;
+}
+
+async function fetchFTSAwards(): Promise<AwardNotice[]> {
+  const awards: AwardNotice[] = [];
+  const awardKeywords = [
+    "electricity supply",
+    "energy supply",
+    "electricity framework",
+    "gas and electricity",
+    "sleeved",
+    "half hourly",
+  ];
+
+  for (const keyword of awardKeywords.slice(0, 4)) {
+    try {
+      const url =
+        `https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages?` +
+        `keyword=${encodeURIComponent(keyword)}` +
+        `&stage=award&size=50`;
+      const res = await fetch(url, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) continue;
+
+      const data = await res.json();
+      const packages = data.results || data.releases || data.releasePackages || [];
+      for (const pkg of packages) {
+        const releases = pkg.releases || [pkg];
+        for (const r of releases) {
+          const awardList = Array.isArray(r.awards) ? r.awards : [];
+          const buyer = (r.buyer || pkg?.buyer || {}) as Record<string, unknown>;
+          const tender = (r.tender || {}) as Record<string, unknown>;
+          const ocid = String(r.ocid || r.id || pkg?.ocid || "");
+          const title = String(tender.title || r.title || "");
+          const noticeId = ocid.replace(/^ocds-[a-z0-9]+-/i, "");
+
+          const deliveryAddresses = Array.isArray(tender.deliveryAddresses)
+            ? tender.deliveryAddresses
+            : [];
+          const location =
+            deliveryAddresses.length > 0
+              ? String(
+                  (deliveryAddresses[0] as Record<string, unknown>).region ||
+                    (deliveryAddresses[0] as Record<string, unknown>).locality ||
+                    ""
+                )
+              : "";
+
+          for (const aw of awardList) {
+            const a = aw as Record<string, unknown>;
+            const suppliers = Array.isArray(a.suppliers) ? a.suppliers : [];
+            const winner = suppliers.length > 0
+              ? String((suppliers[0] as Record<string, unknown>).name || "Unknown")
+              : "Unknown";
+            const valueObj = (a.value || {}) as Record<string, unknown>;
+            const value = Number(valueObj.amount || 0) || null;
+            const awardDate = String(a.date || r.datePublished || "");
+
+            awards.push({
+              title,
+              buyer: String(buyer.name || ""),
+              winner,
+              value,
+              awardDate,
+              region: location,
+              url: `https://www.find-tender.service.gov.uk/Notice/${noticeId}`,
+            });
+          }
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  // Deduplicate
+  const seen = new Set<string>();
+  return awards.filter((a) => {
+    const key = `${a.title.toLowerCase()}|${a.buyer.toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).sort((a, b) => (b.awardDate || "").localeCompare(a.awardDate || ""));
+}
+
 function monthNum(m: string): string {
   const months: Record<string, string> = {
     jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
@@ -393,6 +520,12 @@ const PCS_QUERIES = [
   "electricity+framework",
   "supply+of+electricity",
   "gas+and+electricity",
+  "electricity+contract",
+  "sleeved",
+  "half+hourly",
+  "green+energy",
+  "renewable+energy",
+  "utility+supply",
 ];
 
 async function fetchPCS(): Promise<RawTender[]> {
@@ -499,6 +632,10 @@ async function fetchSell2Wales(): Promise<RawTender[]> {
     "https://www.sell2wales.gov.wales/RSSFeed/RSS.aspx?Ession=energy+supply",
     "https://www.sell2wales.gov.wales/RSSFeed/RSS.aspx?Ession=electricity+framework",
     "https://www.sell2wales.gov.wales/RSSFeed/RSS.aspx?Ession=gas+and+electricity",
+    "https://www.sell2wales.gov.wales/RSSFeed/RSS.aspx?Ession=electricity+contract",
+    "https://www.sell2wales.gov.wales/RSSFeed/RSS.aspx?Ession=renewable+energy",
+    "https://www.sell2wales.gov.wales/RSSFeed/RSS.aspx?Ession=utility+supply",
+    "https://www.sell2wales.gov.wales/RSSFeed/RSS.aspx?Ession=green+energy",
   ];
   const seen = new Map<string, RawTender>();
 
@@ -714,6 +851,13 @@ const CHEST_QUERIES = [
   "electricity supply",
   "gas and electricity",
   "utility supply",
+  "sleeved",
+  "demand pool",
+  "half hourly",
+  "green new deal",
+  "net zero",
+  "renewable energy",
+  "energy contract",
 ];
 
 async function fetchTheChest(): Promise<RawTender[]> {
@@ -831,6 +975,7 @@ function dedup(tenders: RawTender[]): RawTender[] {
 export interface CollectionResult {
   tenders: RawTender[];
   sourceHealth: SourceHealth[];
+  recentAwards: AwardNotice[];
 }
 
 export async function collectTenders(days: number): Promise<CollectionResult> {
@@ -843,6 +988,7 @@ export async function collectTenders(days: number): Promise<CollectionResult> {
     s2wResult,
     d3Result,
     chestResult,
+    awardsResult,
   ] = await Promise.allSettled([
     fetchFindATender(days),
     fetchFindATenderPipeline(Math.max(days, 14)),
@@ -852,6 +998,7 @@ export async function collectTenders(days: number): Promise<CollectionResult> {
     fetchSell2Wales(),
     fetchD3Tenders(),
     fetchTheChest(),
+    fetchFTSAwards(),
   ]);
 
   const fatTenders =
@@ -927,6 +1074,8 @@ export async function collectTenders(days: number): Promise<CollectionResult> {
     ...chestTenders,
   ];
   const deduped = dedup(all);
+  const recentAwards =
+    awardsResult.status === "fulfilled" ? awardsResult.value : [];
 
-  return { tenders: deduped, sourceHealth };
+  return { tenders: deduped, sourceHealth, recentAwards };
 }

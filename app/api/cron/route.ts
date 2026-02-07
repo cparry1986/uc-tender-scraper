@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { tenders: raw, sourceHealth } = await collectTenders(1);
+    const { tenders: raw, sourceHealth, recentAwards } = await collectTenders(1);
     const scored = scoreTenders(raw);
     const eligible = scored.filter((t) => !t.excluded);
     const highMedium = eligible.filter(
@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
         daysSearched: 1,
       },
       sourceHealth,
+      recentAwards,
     };
 
     await sendDigestEmail(result);

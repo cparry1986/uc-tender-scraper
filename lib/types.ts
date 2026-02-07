@@ -61,6 +61,16 @@ export interface SourceHealth {
   count: number;
 }
 
+export interface AwardNotice {
+  title: string;
+  buyer: string;
+  winner: string;
+  value: number | null;
+  awardDate: string;
+  region: string;
+  url: string;
+}
+
 export interface ScrapeResult {
   tenders: ScoredTender[];
   stats: {
@@ -78,6 +88,7 @@ export interface ScrapeResult {
     daysSearched: number;
   };
   sourceHealth: SourceHealth[];
+  recentAwards: AwardNotice[];
 }
 
 // ── Analytics types ────────────────────────────────────────────────────

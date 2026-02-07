@@ -10,39 +10,55 @@ import {
 // ── Relevance Gate ─────────────────────────────────────────────────────
 
 const SUPPLY_KEYWORDS = [
+  // Core supply
   /electricity\s+supply/i,
   /energy\s+supply/i,
   /supply\s+of\s+electricity/i,
   /supply\s+of\s+energy/i,
-  /electricity\s+framework/i,
-  /power\s+purchase/i,
-  /\bPPA\b/,
-  /\bCPPA\b/,
-  /half[\s-]?hourly/i,
-  /\bHH\s+supply/i,
-  /renewable\s+energy\s+supply/i,
-  /green\s+energy/i,
-  /\bREGO\b/,
-  /utility\s+supply/i,
-  /gas\s+and\s+electricity/i,
-  /electricity\s+and\s+gas/i,
   /supply\s+of\s+gas\s+and\s+electricity/i,
   /supply\s+of\s+utilities/i,
-  /licensed\s+supplier/i,
-  /flexible\s+purchas/i,
-  /flexible\s+procurement\s+and\s+supply/i,
+  /gas\s+and\s+electricity/i,
+  /electricity\s+and\s+gas/i,
+  /utility\s+supply/i,
+  /utilit(?:y|ies)\s+contract/i,
+  // Frameworks & procurement
+  /electricity\s+framework/i,
+  /energy\s+framework/i,
   /electricity\s+procurement/i,
   /energy\s+procurement/i,
-  /renewable\s+supply/i,
-  /green\s+tariff/i,
-  /energy\s+framework/i,
   /electricity\s+contract/i,
   /energy\s+contract/i,
   /electricity\s+tender/i,
   /energy\s+tender/i,
+  /electricity\s+portfolio/i,
   /public\s+buying\s+organisation/i,
   /\bPBO\b/,
-  /electricity\s+portfolio/i,
+  /licensed\s+supplier/i,
+  // Commercial models - the ones that catch sleeved/demand pool/etc
+  /power\s+purchase/i,
+  /\bPPA\b/,
+  /\bCPPA\b/,
+  /sleeved/i,
+  /demand\s+pool/i,
+  /flexible\s+purchas/i,
+  /flexible\s+procurement/i,
+  /flexible\s+supply/i,
+  /half[\s-]?hourly/i,
+  /\bHH\s+(supply|meter|data|settlement)/i,
+  // Renewables / green / net zero
+  /renewable\s+energy/i,
+  /renewable\s+supply/i,
+  /renewable\s+electricity/i,
+  /green\s+energy/i,
+  /green\s+tariff/i,
+  /green\s+new\s+deal/i,
+  /\bREGO\b/,
+  /net[\s-]?zero\s+(energy|carbon|target)/i,
+  /carbon\s+neutral\s+energy/i,
+  /decarboni/i,
+  // Broad electricity/energy catches (widest net)
+  /\belectricity\b/i,
+  /\benergy\s+(meter|bill|cost|audit|manag|efficienc)/i,
 ];
 
 function passesRelevanceGate(text: string): boolean {
@@ -69,7 +85,7 @@ const EXCLUSION_PATTERNS: [RegExp, string][] = [
   [/\bCCTV\b/i, "CCTV"],
   [/\bgritting\b/i, "Gritting"],
   [/\bhighways?\b/i, "Highways"],
-  [/\bconstruction\b/i, "Construction"],
+  [/construction\s+(works|services?|project|contract)/i, "Construction works"],
   [/\bdemolition\b/i, "Demolition"],
   [/\bcleaning\s+(service|contract)/i, "Cleaning"],
   [/\bcatering\b/i, "Catering"],
@@ -209,22 +225,35 @@ export function detectRegion(
 // ── Fit Score (0-30) ───────────────────────────────────────────────────
 
 const FIT_KEYWORDS: [RegExp, number][] = [
+  // Direct supply matches (highest score)
   [/supply\s+of\s+electricity/i, 6],
   [/electricity\s+supply/i, 5],
+  [/energy\s+supply\s+(contract|framework|agreement)/i, 5],
+  // HH / metering (UrbanChain sweet spot)
   [/half[\s-]?hourly/i, 5],
-  [/\bHH\s+(supply|data|meter)/i, 5],
-  [/renewable\s+(energy|electricity)/i, 4],
+  [/\bHH\s+(supply|data|meter|settlement)/i, 5],
+  // Commercial models
   [/\bPPA\b|power\s+purchase\s+agreement/i, 5],
   [/\bREGO\b|renewable\s+energy\s+guarantee/i, 5],
-  [/flexible\s+(purchas|supply|contract)/i, 4],
+  [/corporate\s+PPA|CPPA/i, 5],
+  [/sleeved\s+(PPA|demand|electricity|energy)/i, 5],
+  [/sleeved/i, 4],
+  [/demand\s+pool/i, 5],
+  [/flexible\s+(purchas|supply|contract|procurement)/i, 4],
+  [/licensed\s+(electricity\s+)?supplier/i, 5],
+  // Green / renewables
+  [/renewable\s+(energy|electricity)/i, 4],
   [/green\s+tariff/i, 4],
   [/green\s+energy/i, 3],
-  [/corporate\s+PPA|CPPA/i, 5],
-  [/sleeved\s+PPA/i, 5],
+  [/green\s+new\s+deal/i, 4],
   [/renewable\s+matching/i, 4],
   [/carbon\s+neutral/i, 3],
   [/net[\s-]?zero/i, 3],
-  [/licensed\s+(electricity\s+)?supplier/i, 5],
+  [/decarboni/i, 3],
+  // Broader energy terms (lower score, but still relevant)
+  [/electricity\s+(contract|framework|procurement|tender)/i, 4],
+  [/energy\s+(contract|framework|procurement)/i, 3],
+  [/utilit(?:y|ies)\s+(supply|contract|framework)/i, 3],
 ];
 
 function scoreFit(text: string, cpvCodes: string[]): number {
