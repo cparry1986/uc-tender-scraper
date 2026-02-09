@@ -300,7 +300,10 @@ function scoreTimeline(deadline: string | null): number {
   if (daysLeft <= 7) return 8;
   if (daysLeft <= 14) return 12;
   if (daysLeft <= 45) return 15;
-  if (daysLeft <= 90) return 10;
+  if (daysLeft <= 90) return 12;
+  if (daysLeft <= 180) return 10;
+  if (daysLeft <= 365) return 8;
+  if (daysLeft <= 550) return 6;
   return 5;
 }
 

@@ -76,6 +76,15 @@ export function applyFilters(
         case "next-3-months":
           if (daysLeft < 0 || daysLeft > 90) return false;
           break;
+        case "next-6-months":
+          if (daysLeft < 0 || daysLeft > 180) return false;
+          break;
+        case "next-12-months":
+          if (daysLeft < 0 || daysLeft > 365) return false;
+          break;
+        case "next-18-months":
+          if (daysLeft < 0 || daysLeft > 550) return false;
+          break;
       }
     }
 
@@ -194,6 +203,9 @@ export default function FilterBar({
           <option value="next-2-weeks">Next 2 weeks</option>
           <option value="next-month">Next month</option>
           <option value="next-3-months">Next 3 months</option>
+          <option value="next-6-months">Next 6 months</option>
+          <option value="next-12-months">Next 12 months</option>
+          <option value="next-18-months">Next 18 months</option>
         </select>
 
         {/* Reset */}

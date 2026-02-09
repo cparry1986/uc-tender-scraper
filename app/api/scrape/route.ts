@@ -4,10 +4,11 @@ import { scoreTenders } from "@/lib/scoring";
 import { ScrapeResult } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 120; // Allow up to 2 minutes for deep scrapes
 
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
-  const days = Math.min(Number(params.get("days")) || 3, 30);
+  const days = Math.min(Number(params.get("days")) || 30, 550);
   const minScore = Number(params.get("minScore")) || 0;
 
   try {
