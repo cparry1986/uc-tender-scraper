@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UrbanChain Design System</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #00E5BF;
+            --primary-light: #E0FFF8;
+            --primary-lighter: #B3FFF0;
+            --primary-lightest: #66FFE0;
+            --primary-dark: #00CCaa;
+            --primary-darker: #00B396;
+
+            --secondary: #6C5CE7;
+            --secondary-light: #F0EEFF;
+            --secondary-lighter: #D4CFFC;
+            --secondary-dark: #5A49D6;
+
+            --accent: #D4FF00;
+            --accent-light: #EAFF66;
+            --accent-lighter: #F5FFB3;
+            --accent-dark: #BFEE00;
+
+            --black: #0A0A0A;
+            --navy: #0D0B2E;
+            --white: #FFFFFF;
+
+            --gray-50: #F8F9FA;
+            --gray-100: #F1F3F5;
+            --gray-200: #E9ECEF;
+            --gray-300: #DEE2E6;
+            --gray-400: #CED4DA;
+            --gray-500: #ADB5BD;
+            --gray-600: #868E96;
+            --gray-700: #495057;
+            --gray-800: #343A40;
+            --gray-900: #212529;
+
+            --success: #28A745;
+            --error: #DC3545;
+            --warning: #F59E0B;
+            --info: #00E5BF;
+
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --shadow-xl: 0 20px 25px rgba(0,0,0,0.12);
+
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 12px;
+            --spacing-base: 16px;
+            --spacing-lg: 20px;
+            --spacing-xl: 24px;
+            --spacing-2xl: 32px;
+            --spacing-3xl: 40px;
+            --spacing-4xl: 48px;
+            --spacing-5xl: 56px;
+            --spacing-6xl: 64px;
+            --spacing-8xl: 80px;
+            --spacing-10xl: 96px;
+            --spacing-16xl: 128px;
+        }
+
+        body {
+            font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: var(--gray-900);
+            background-color: var(--white);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.dark-mode {
+            background-color: var(--navy);
+            color: var(--white);
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--navy) 0%, #1a1640 100%);
+            color: var(--white);
+            padding: var(--spacing-6xl);
+            text-align: center;
+            border-bottom: 3px solid var(--primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+            opacity: 0.1;
+            border-radius: 50%;
+        }
+
+        header h1 {
+            font-size: clamp(36px, 6vw, 64px);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: var(--spacing-base);
+            position: relative;
+            z-index: 1;
+        }
+
+        header .tagline {
+            font-size: 20px;
+            color: var(--primary);
+            margin-bottom: var(--spacing-lg);
+            position: relative;
+            z-index: 1;
+        }
+
+        header .subtitle {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.8);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .dark-mode .container {
+            background-color: var(--navy);
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            background: var(--gray-50);
+            border-right: 1px solid var(--gray-200);
+            padding: var(--spacing-2xl);
+            position: fixed;
+            width: 240px;
+            height: 100vh;
+            overflow-y: auto;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 101;
+            background: var(--primary);
+            color: var(--navy);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s;
+        }
+
+        .sidebar-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            z-index: 99;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        @media (min-width: 1100px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .sidebar-toggle {
+                display: none;
+            }
+            main {
+                margin-left: 240px !important;
+            }
+        }
+
+        .dark-mode .sidebar {
+            background-color: #1a1640;
+            border-right-color: var(--navy);
+        }
+
+        .sidebar h3 {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--gray-600);
+            letter-spacing: 0.05em;
+            margin-top: var(--spacing-2xl);
+            margin-bottom: var(--spacing-base);
+        }
+
+        .dark-mode .sidebar h3 {
+            color: var(--gray-400);
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .sidebar a {
+            color: var(--gray-700);
+            text-decoration: none;
+            font-size: 14px;
+            padding: var(--spacing-sm) var(--spacing-base);
+            border-radius: 6px;
+            display: block;
+            transition: all 0.3s;
+        }
+
+        .dark-mode .sidebar a {
+            color: var(--gray-300);
+        }
+
+        .sidebar a:hover {
+            background-color: var(--primary-light);
+            color: var(--navy);
+        }
+
+        .dark-mode .sidebar a:hover {
+            background-color: var(--primary);
+            color: var(--navy);
+        }
+
+        .sidebar a.active {
+            background-color: var(--primary);
+            color: var(--navy);
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        main {
+            margin-left: 0;
+            padding-top: 0;
+            flex: 1;
+            min-width: 0;
+            width: 100%;
+        }
+
+        section {
+            padding: var(--spacing-4xl) var(--spacing-3xl);
+            border-bottom: 1px solid var(--gray-200);
+            max-width: 1200px;
+        }
+
+        .dark-mode section {
+            border-bottom-color: var(--gray-800);
+        }
+
+        section h2 {
+            font-size: clamp(28px, 5vw, 48px);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: var(--spacing-xl);
+            color: var(--navy);
+        }
+
+        .dark-mode section h2 {
+            color: var(--primary);
+        }
+
+        section p {
+            font-size: 16px;
+            color: var(--gray-700);
+            margin-bottom: var(--spacing-base);
+            max-width: 800px;
+        }
+
+        .dark-mode section p {
+            color: var(--gray-300);
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: flex-end;
+            padding: var(--spacing-base) var(--spacing-2xl);
+            gap: var(--spacing-base);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .dark-mode .toolbar {
+            background: var(--navy);
+            border-bottom-color: var(--gray-800);
+        }
+
+        .toggle-btn {
+            background: var(--primary);
+            color: var(--navy);
+            border: none;
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: 24px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            box-shadow: var(--shadow-md);
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Color Palette */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: var(--spacing-base);
+            margin-top: var(--spacing-2xl);
+        }
+
+        .color-group h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: var(--spacing-2xl);
+            margin-bottom: var(--spacing-base);
+            color: var(--navy);
+        }
+
+        .dark-mode .color-group h3 {
+            color: var(--primary);
+        }
+
+        .color-swatch {
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--white);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s;
+        }
+
+        .dark-mode .color-swatch {
+            background: var(--gray-800);
+        }
+
+        .color-swatch:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .color-sample {
+            height: 120px;
+            width: 100%;
+        }
+
+        .color-info {
+            padding: var(--spacing-base);
+            text-align: center;
+        }
+
+        .color-info .hex {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--navy);
+            font-family: monospace;
+        }
+
+        .dark-mode .color-info .hex {
+            color: var(--primary);
+        }
+
+        .color-info .name {
+            font-size: 12px;
+            color: var(--gray-600);
+            margin-top: var(--spacing-xs);
+        }
+
+        .dark-mode .color-info .name {
+            color: var(--gray-400);
+        }
+
+        /* Typography */
+        .typography-showcase {
+            margin-top: var(--spacing-3xl);
+        }
+
+        .type-sample {
+            margin-bottom: var(--spacing-3xl);
+            padding: var(--spacing-2xl);
+            background: var(--gray-50);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .dark-mode .type-sample {
+            background: var(--gray-800);
+        }
+
+        .type-sample .label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--gray-600);
+            letter-spacing: 0.05em;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .dark-mode .type-sample .label {
+            color: var(--gray-400);
+        }
+
+        .display {
+            font-size: 64px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .h1 {
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .h2 {
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            line-height: 1.3;
+        }
+
+        .h3 {
+            font-size: 28px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .h4 {
+            font-size: 22px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .h5 {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .h6 {
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .body-lg {
+            font-size: 18px;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        .body {
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        .body-sm {
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+
+        .caption {
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+
+        /* Buttons */
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-2xl);
+            margin-top: var(--spacing-3xl);
+        }
+
+        .button-group {
+            padding: var(--spacing-2xl);
+            background: var(--gray-50);
+            border-radius: 8px;
+        }
+
+        .dark-mode .button-group {
+            background: var(--gray-800);
+        }
+
+        .button-group h4 {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--gray-600);
+            margin-bottom: var(--spacing-lg);
+            letter-spacing: 0.05em;
+        }
+
+        .dark-mode .button-group h4 {
+            color: var(--gray-400);
+        }
+
+        .button-showcase {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-base);
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: var(--spacing-base) var(--spacing-2xl);
+            border: none;
+            border-radius: 24px;
+            font-family: "DM Sans", sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--navy);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-primary:active {
+            background: var(--primary-darker);
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            background: var(--gray-300);
+            color: var(--gray-600);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--navy);
+            color: var(--white);
+            box-shadow: var(--shadow-md);
+        }
+
+        .dark-mode .btn-secondary {
+            background: var(--gray-700);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-900);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .dark-mode .btn-secondary:hover {
+            background: var(--gray-600);
+        }
+
+        .btn-secondary:active {
+            background: var(--black);
+            transform: translateY(0);
+        }
+
+        .btn-secondary:disabled {
+            background: var(--gray-300);
+            color: var(--gray-600);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--navy);
+            border: 2px solid var(--gray-300);
+        }
+
+        .dark-mode .btn-outline {
+            color: var(--white);
+            border-color: var(--gray-600);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:active {
+            background: var(--primary-light);
+        }
+
+        .btn-accent {
+            background: var(--secondary);
+            color: var(--white);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-accent:hover {
+            background: var(--secondary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-accent:active {
+            background: #4836C5;
+            transform: translateY(0);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--primary);
+            border: none;
+        }
+
+        .btn-ghost:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+
+        .btn-sm {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            font-size: 12px;
+        }
+
+        .btn-lg {
+            padding: var(--spacing-lg) var(--spacing-3xl);
+            font-size: 16px;
+        }
+
+        .btn-loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            top: 50%;
+            left: 50%;
+            margin-left: -7px;
+            margin-top: -7px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--white);
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: var(--spacing-sm);
+            color: var(--navy);
+        }
+
+        .dark-mode label {
+            color: var(--white);
+        }
+
+        .required::after {
+            content: ' *';
+            color: var(--error);
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: var(--spacing-base);
+            border: 2px solid var(--gray-300);
+            border-radius: 8px;
+            font-family: "DM Sans", sans-serif;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: var(--white);
+            color: var(--navy);
+        }
+
+        .dark-mode input[type="text"],
+        .dark-mode input[type="email"],
+        .dark-mode input[type="password"],
+        .dark-mode input[type="number"],
+        .dark-mode select,
+        .dark-mode textarea {
+            background: var(--gray-800);
+            color: var(--white);
+            border-color: var(--gray-700);
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .dark-mode input[type="text"]:focus,
+        .dark-mode input[type="email"]:focus,
+        .dark-mode input[type="password"]:focus,
+        .dark-mode input[type="number"]:focus,
+        .dark-mode select:focus,
+        .dark-mode textarea:focus {
+            box-shadow: 0 0 0 3px rgba(0, 229, 191, 0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        /* Checkbox */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-base);
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-base);
+        }
+
+        input[type="checkbox"],
+        input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .dark-mode .card {
+            background: var(--gray-800);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+
+        .card-content {
+            padding: var(--spacing-2xl);
+        }
+
+        .card h3 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-base);
+            color: var(--navy);
+        }
+
+        .dark-mode .card h3 {
+            color: var(--white);
+        }
+
+        .card p {
+            font-size: 14px;
+            color: var(--gray-700);
+            margin-bottom: var(--spacing-base);
+        }
+
+        .dark-mode .card p {
+            color: var(--gray-300);
+        }
+
+        /* Dark/Hero Card */
+        .card-dark {
+            background: var(--navy);
+            color: var(--white);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-dark::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(135deg, var(--primary) 0%, transparent 70%);
+            opacity: 0.15;
+            border-radius: 50%;
+        }
+
+        .card-dark::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            left: 10%;
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(135deg, var(--secondary) 0%, transparent 70%);
+            opacity: 0.1;
+            border-radius: 50%;
+        }
+
+        .card-dark-diagonal {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+
+        .diagonal-line {
+            position: absolute;
+            opacity: 0.3;
+        }
+
+        .diagonal-line.cyan {
+            width: 3px;
+            height: 200%;
+            background: var(--primary);
+            top: -20%;
+            left: 15%;
+            transform: rotate(25deg);
+        }
+
+        .diagonal-line.lime {
+            width: 3px;
+            height: 200%;
+            background: var(--accent);
+            top: -10%;
+            right: 20%;
+            transform: rotate(-30deg);
+        }
+
+        .diagonal-line.purple {
+            width: 3px;
+            height: 200%;
+            background: var(--secondary);
+            top: -5%;
+            right: 5%;
+            transform: rotate(35deg);
+        }
+
+        .card-dark h3 {
+            color: var(--white);
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-dark p {
+            color: rgba(255, 255, 255, 0.8);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: var(--spacing-xs) var(--spacing-lg);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-primary {
+            background: var(--primary-light);
+            color: var(--navy);
+        }
+
+        .badge-secondary {
+            background: var(--secondary-light);
+            color: var(--navy);
+        }
+
+        .badge-accent {
+            background: var(--accent-lighter);
+            color: var(--navy);
+        }
+
+        .badge-success {
+            background: rgba(40, 167, 69, 0.1);
+            color: var(--success);
+        }
+
+        .badge-error {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--error);
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        /* Alerts */
+        .alert {
+            padding: var(--spacing-base) var(--spacing-lg);
+            border-radius: 8px;
+            border-left: 4px solid;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .alert-success {
+            background: rgba(40, 167, 69, 0.1);
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .alert-error {
+            background: rgba(220, 53, 69, 0.1);
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+
+        .alert-info {
+            background: rgba(0, 229, 191, 0.1);
+            border-color: var(--info);
+            color: var(--primary);
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--white);
+            padding: var(--spacing-base) var(--spacing-3xl);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-md);
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .dark-mode nav {
+            background: var(--navy);
+            border-bottom-color: var(--primary);
+        }
+
+        .nav-logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--navy);
+        }
+
+        .dark-mode .nav-logo {
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: var(--spacing-2xl);
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--gray-700);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .dark-mode .nav-links a {
+            color: var(--gray-300);
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        /* Spacing Grid */
+        .spacing-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: var(--spacing-3xl);
+            margin-top: var(--spacing-3xl);
+        }
+
+        .spacing-item {
+            text-align: center;
+        }
+
+        .spacing-box {
+            background: var(--primary);
+            border-radius: 8px;
+            margin-bottom: var(--spacing-base);
+        }
+
+        .spacing-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--navy);
+        }
+
+        .dark-mode .spacing-label {
+            color: var(--primary);
+        }
+
+        /* Code Block */
+        .code-block {
+            background: var(--gray-900);
+            color: var(--gray-100);
+            padding: var(--spacing-2xl);
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-top: var(--spacing-2xl);
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .code-block code {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* Copy Button */
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            padding: var(--spacing-sm) var(--spacing-base);
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-light);
+            color: var(--navy);
+        }
+
+        /* Components Showcase */
+        .component-showcase {
+            background: var(--gray-50);
+            padding: var(--spacing-2xl);
+            border-radius: 8px;
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .dark-mode .component-showcase {
+            background: var(--gray-800);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            section {
+                padding: var(--spacing-2xl) var(--spacing-base);
+            }
+
+            header {
+                padding: var(--spacing-3xl) var(--spacing-2xl);
+            }
+
+            header h1 {
+                font-size: 36px;
+            }
+
+            section h2 {
+                font-size: 32px;
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--spacing-base);
+            }
+
+            .button-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Utility Classes */
+        .grid-12 {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--spacing-2xl);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-muted {
+            color: var(--gray-600);
+        }
+
+        .dark-mode .text-muted {
+            color: var(--gray-400);
+        }
+
+        .mt-2xl {
+            margin-top: var(--spacing-2xl);
+        }
+
+        .mb-3xl {
+            margin-bottom: var(--spacing-3xl);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header id="header">
+        <h1>UrbanChain Design System</h1>
+        <p class="tagline">Fairer, cleaner, local renewable energy.</p>
+        <p class="subtitle">A comprehensive design system for UrbanChain's digital presence. Blockchain, AI & IoT enabled peer-to-peer energy markets.</p>
+    </header>
+
+    <!-- Sidebar Toggle Button -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation">&#9776;</button>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="#colors" onclick="navigate(event)">Color Palette</a></li>
+                <li><a href="#typography" onclick="navigate(event)">Typography</a></li>
+                <li><a href="#spacing" onclick="navigate(event)">Spacing & Layout</a></li>
+                <li><a href="#buttons" onclick="navigate(event)">Buttons</a></li>
+                <li><a href="#forms" onclick="navigate(event)">Form Elements</a></li>
+                <li><a href="#cards" onclick="navigate(event)">Cards</a></li>
+                <li><a href="#navigation" onclick="navigate(event)">Navigation</a></li>
+                <li><a href="#badges" onclick="navigate(event)">Badges & Alerts</a></li>
+                <li><a href="#shadows" onclick="navigate(event)">Shadows & Effects</a></li>
+                <li><a href="#guidelines" onclick="navigate(event)">Usage Guidelines</a></li>
+            </ul>
+
+            <h3 style="margin-top: var(--spacing-3xl);">Brand Info</h3>
+            <ul>
+                <li style="margin-bottom: var(--spacing-base);">
+                    <strong>Founded:</strong> 2017
+                </li>
+                <li style="margin-bottom: var(--spacing-base);">
+                    <strong>Location:</strong> Manchester, UK
+                </li>
+                <li style="margin-bottom: var(--spacing-base);">
+                    <strong>Font:</strong> DM Sans
+                </li>
+                <li>
+                    <strong>Status:</strong> Active
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <button class="toggle-btn" onclick="toggleDarkMode()">🌙 Dark Mode</button>
+            </div>
+
+            <!-- Color Palette Section -->
+            <section id="colors">
+                <h2>Color Palette</h2>
+                <p>UrbanChain's color palette reflects our modern, tech-forward approach to renewable energy. The primary cyan color represents energy and innovation, while secondary purple adds sophistication. Accent lime brings vibrancy and optimism.</p>
+
+                <div class="color-group">
+                    <h3>Primary Colors</h3>
+                    <div class="color-grid">
+                        <div class="color-swatch" onclick="copyColor('#00E5BF')">
+                            <div class="color-sample" style="background: #00E5BF;"></div>
+                            <div class="color-info">
+                                <div class="hex">#00E5BF</div>
+                                <div class="name">Primary Cyan</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#E0FFF8')">
+                            <div class="color-sample" style="background: #E0FFF8;"></div>
+                            <div class="color-info">
+                                <div class="hex">#E0FFF8</div>
+                                <div class="name">Primary Light</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#B3FFF0')">
+                            <div class="color-sample" style="background: #B3FFF0;"></div>
+                            <div class="color-info">
+                                <div class="hex">#B3FFF0</div>
+                                <div class="name">Primary Lighter</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#00CCaa')">
+                            <div class="color-sample" style="background: #00CCaa;"></div>
+                            <div class="color-info">
+                                <div class="hex">#00CCaa</div>
+                                <div class="name">Primary Dark</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <h3>Secondary Colors (Accent Purple)</h3>
+                    <div class="color-grid">
+                        <div class="color-swatch" onclick="copyColor('#6C5CE7')">
+                            <div class="color-sample" style="background: #6C5CE7;"></div>
+                            <div class="color-info">
+                                <div class="hex">#6C5CE7</div>
+                                <div class="name">Secondary</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#F0EEFF')">
+                            <div class="color-sample" style="background: #F0EEFF;"></div>
+                            <div class="color-info">
+                                <div class="hex">#F0EEFF</div>
+                                <div class="name">Secondary Light</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#D4CFFC')">
+                            <div class="color-sample" style="background: #D4CFFC;"></div>
+                            <div class="color-info">
+                                <div class="hex">#D4CFFC</div>
+                                <div class="name">Secondary Lighter</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#5A49D6')">
+                            <div class="color-sample" style="background: #5A49D6;"></div>
+                            <div class="color-info">
+                                <div class="hex">#5A49D6</div>
+                                <div class="name">Secondary Dark</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <h3>Accent Colors (Lime/Chartreuse)</h3>
+                    <div class="color-grid">
+                        <div class="color-swatch" onclick="copyColor('#D4FF00')">
+                            <div class="color-sample" style="background: #D4FF00;"></div>
+                            <div class="color-info">
+                                <div class="hex">#D4FF00</div>
+                                <div class="name">Accent</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#F5FFB3')">
+                            <div class="color-sample" style="background: #F5FFB3;"></div>
+                            <div class="color-info">
+                                <div class="hex">#F5FFB3</div>
+                                <div class="name">Accent Lighter</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#EAFF66')">
+                            <div class="color-sample" style="background: #EAFF66;"></div>
+                            <div class="color-info">
+                                <div class="hex">#EAFF66</div>
+                                <div class="name">Accent Light</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#BFEE00')">
+                            <div class="color-sample" style="background: #BFEE00;"></div>
+                            <div class="color-info">
+                                <div class="hex">#BFEE00</div>
+                                <div class="name">Accent Dark</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <h3>Neutral Colors</h3>
+                    <div class="color-grid">
+                        <div class="color-swatch" onclick="copyColor('#FFFFFF')">
+                            <div class="color-sample" style="background: #FFFFFF; border: 1px solid #ccc;"></div>
+                            <div class="color-info">
+                                <div class="hex">#FFFFFF</div>
+                                <div class="name">White</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#F8F9FA')">
+                            <div class="color-sample" style="background: #F8F9FA;"></div>
+                            <div class="color-info">
+                                <div class="hex">#F8F9FA</div>
+                                <div class="name">Gray 50</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#F1F3F5')">
+                            <div class="color-sample" style="background: #F1F3F5;"></div>
+                            <div class="color-info">
+                                <div class="hex">#F1F3F5</div>
+                                <div class="name">Gray 100</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#DEE2E6')">
+                            <div class="color-sample" style="background: #DEE2E6;"></div>
+                            <div class="color-info">
+                                <div class="hex">#DEE2E6</div>
+                                <div class="name">Gray 300</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#495057')">
+                            <div class="color-sample" style="background: #495057;"></div>
+                            <div class="color-info">
+                                <div class="hex">#495057</div>
+                                <div class="name">Gray 700</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#212529')">
+                            <div class="color-sample" style="background: #212529;"></div>
+                            <div class="color-info">
+                                <div class="hex">#212529</div>
+                                <div class="name">Gray 900</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#0D0B2E')">
+                            <div class="color-sample" style="background: #0D0B2E;"></div>
+                            <div class="color-info">
+                                <div class="hex">#0D0B2E</div>
+                                <div class="name">Navy</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#0A0A0A')">
+                            <div class="color-sample" style="background: #0A0A0A;"></div>
+                            <div class="color-info">
+                                <div class="hex">#0A0A0A</div>
+                                <div class="name">Black</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <h3>Semantic Colors</h3>
+                    <div class="color-grid">
+                        <div class="color-swatch" onclick="copyColor('#28A745')">
+                            <div class="color-sample" style="background: #28A745;"></div>
+                            <div class="color-info">
+                                <div class="hex">#28A745</div>
+                                <div class="name">Success</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#DC3545')">
+                            <div class="color-sample" style="background: #DC3545;"></div>
+                            <div class="color-info">
+                                <div class="hex">#DC3545</div>
+                                <div class="name">Error</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#F59E0B')">
+                            <div class="color-sample" style="background: #F59E0B;"></div>
+                            <div class="color-info">
+                                <div class="hex">#F59E0B</div>
+                                <div class="name">Warning</div>
+                            </div>
+                        </div>
+                        <div class="color-swatch" onclick="copyColor('#00E5BF')">
+                            <div class="color-sample" style="background: #00E5BF;"></div>
+                            <div class="color-info">
+                                <div class="hex">#00E5BF</div>
+                                <div class="name">Info</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Typography Section -->
+            <section id="typography">
+                <h2>Typography</h2>
+                <p>We use DM Sans, a geometric sans-serif that embodies UrbanChain's modern and clean aesthetic. It provides excellent readability across all device sizes.</p>
+
+                <div class="typography-showcase">
+                    <div class="type-sample">
+                        <div class="label">Display / 64px / 700 weight</div>
+                        <div class="display">The future of energy</div>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="label">Heading 1 / 48px / 700 weight</div>
+                        <div class="h1">Sustainable Energy Solutions</div>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="label">Heading 2 / 36px / 700 weight</div>
+                        <div class="h2">Peer-to-peer Energy Markets</div>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="label">Heading 3 / 28px / 600 weight</div>
+                        <div class="h3">Powered by Blockchain & AI</div>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="label">Heading 4 / 22px / 600 weight</div>
+                        <div class="h4">Local renewable energy network</div>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="label">Heading 5 / 18px / 600 weight</div>
+                        <div class="h5">Join the energy revolution</div>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="label">Heading 6 / 16px / 600 weight</div>
+                        <div class="h6">Energy trading platform</div>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="label">Body Large / 18px / 400 weight / 1.6 line-height</div>
+                        <div class="body-lg">UrbanChain leverages blockchain technology, artificial intelligence, and Internet of Things devices to create fair, transparent peer-to-peer energy trading markets. Our platform enables communities to generate, share, and trade renewable energy locally.</div>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="label">Body / 16px / 400 weight / 1.6 line-height</div>
+                        <div class="body">Join thousands of energy prosumers across Manchester and beyond. Trade your renewable energy directly with your community, powered by our intelligent blockchain platform. Fairer. Cleaner. Local.</div>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="label">Body Small / 14px / 400 weight / 1.5 line-height</div>
+                        <div class="body-sm">UrbanChain Platform v2.1.0 — Built for the future of sustainable energy distribution.</div>
+                    </div>
+
+                    <div class="type-sample">
+                        <div class="label">Caption / 12px / 400 weight / 1.4 line-height</div>
+                        <div class="caption">Last updated: February 2025 | Active in 12 UK regions | 10,000+ users</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Spacing & Layout Section -->
+            <section id="spacing">
+                <h2>Spacing & Layout</h2>
+                <p>Our spacing system uses a 4px base unit, creating a harmonious and scalable rhythm throughout the design system. We use a 12-column grid with max-width of 1200px.</p>
+
+                <div class="spacing-showcase">
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 16px;"></div>
+                        <div class="spacing-label">4px (xs)</div>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 32px;"></div>
+                        <div class="spacing-label">8px (sm)</div>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 48px;"></div>
+                        <div class="spacing-label">12px (md)</div>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 64px;"></div>
+                        <div class="spacing-label">16px (base)</div>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 80px;"></div>
+                        <div class="spacing-label">20px (lg)</div>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 96px;"></div>
+                        <div class="spacing-label">24px (xl)</div>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 128px;"></div>
+                        <div class="spacing-label">32px (2xl)</div>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 160px;"></div>
+                        <div class="spacing-label">40px (3xl)</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Border Radius</h3>
+                <div class="spacing-showcase" style="margin-top: var(--spacing-2xl);">
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 60px; border-radius: 4px;"></div>
+                        <div class="spacing-label">4px (small)</div>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 60px; border-radius: 8px;"></div>
+                        <div class="spacing-label">8px (medium)</div>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 60px; border-radius: 12px;"></div>
+                        <div class="spacing-label">12px (large)</div>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 60px; border-radius: 16px;"></div>
+                        <div class="spacing-label">16px (xl)</div>
+                    </div>
+                    <div class="spacing-item">
+                        <div class="spacing-box" style="height: 60px; border-radius: 9999px;"></div>
+                        <div class="spacing-label">9999px (pill)</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Buttons Section -->
+            <section id="buttons">
+                <h2>Buttons</h2>
+                <p>Buttons are core interactive elements in UrbanChain's interface. We offer multiple variants to suit different contexts and user intents.</p>
+
+                <div class="button-grid">
+                    <div class="button-group">
+                        <h4>Primary Buttons</h4>
+                        <div class="button-showcase">
+                            <button class="btn btn-primary">Primary (Default)</button>
+                            <button class="btn btn-primary" style="background: var(--primary-dark);">Primary (Hover)</button>
+                            <button class="btn btn-primary" style="background: var(--primary-darker);">Primary (Active)</button>
+                            <button class="btn btn-primary" disabled>Primary (Disabled)</button>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <h4>Secondary Buttons</h4>
+                        <div class="button-showcase">
+                            <button class="btn btn-secondary">Secondary (Default)</button>
+                            <button class="btn btn-secondary" style="background: var(--gray-900);">Secondary (Hover)</button>
+                            <button class="btn btn-secondary" style="background: var(--black);">Secondary (Active)</button>
+                            <button class="btn btn-secondary" disabled>Secondary (Disabled)</button>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <h4>Outline Buttons</h4>
+                        <div class="button-showcase">
+                            <button class="btn btn-outline">Outline (Default)</button>
+                            <button class="btn btn-outline" style="border-color: var(--primary); color: var(--primary);">Outline (Hover)</button>
+                            <button class="btn btn-outline" style="background: var(--primary-light); border-color: var(--primary);">Outline (Active)</button>
+                            <button class="btn btn-outline" disabled>Outline (Disabled)</button>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <h4>Accent (Purple) Buttons</h4>
+                        <div class="button-showcase">
+                            <button class="btn btn-accent">Accent (Default)</button>
+                            <button class="btn btn-accent" style="background: var(--secondary-dark);">Accent (Hover)</button>
+                            <button class="btn btn-accent" style="background: #4836C5;">Accent (Active)</button>
+                            <button class="btn btn-accent" disabled>Accent (Disabled)</button>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <h4>Ghost Buttons</h4>
+                        <div class="button-showcase">
+                            <button class="btn btn-ghost">Ghost (Default)</button>
+                            <button class="btn btn-ghost" style="color: var(--primary-dark); text-decoration: underline;">Ghost (Hover)</button>
+                            <button class="btn btn-ghost" disabled>Ghost (Disabled)</button>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <h4>Loading State</h4>
+                        <div class="button-showcase">
+                            <button class="btn btn-primary btn-loading">Processing...</button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Button Sizes</h3>
+                <div class="component-showcase" style="margin-top: var(--spacing-2xl);">
+                    <div style="display: flex; flex-direction: column; gap: var(--spacing-lg);">
+                        <button class="btn btn-primary btn-sm">Small Button</button>
+                        <button class="btn btn-primary">Medium Button (Default)</button>
+                        <button class="btn btn-primary btn-lg">Large Button</button>
+                    </div>
+                </div>
+
+                <div class="code-block"><code>&lt;button class="btn btn-primary"&gt;Click me&lt;/button&gt;
+&lt;button class="btn btn-secondary"&gt;Secondary&lt;/button&gt;
+&lt;button class="btn btn-outline"&gt;Outline&lt;/button&gt;
+&lt;button class="btn btn-accent"&gt;Accent&lt;/button&gt;
+&lt;button class="btn btn-ghost"&gt;Ghost&lt;/button&gt;
+
+&lt;!-- Sizes: --&gt;
+&lt;button class="btn btn-primary btn-sm"&gt;Small&lt;/button&gt;
+&lt;button class="btn btn-primary btn-lg"&gt;Large&lt;/button&gt;
+
+&lt;!-- States: --&gt;
+&lt;button class="btn btn-primary" disabled&gt;Disabled&lt;/button&gt;
+&lt;button class="btn btn-primary btn-loading"&gt;Loading&lt;/button&gt;</code></div>
+            </section>
+
+            <!-- Forms Section -->
+            <section id="forms">
+                <h2>Form Elements</h2>
+                <p>Form elements are styled consistently with UrbanChain's design language, featuring clear focus states and error messaging.</p>
+
+                <div class="component-showcase">
+                    <div class="form-group">
+                        <label for="text-input" class="required">Text Input</label>
+                        <input type="text" id="text-input" placeholder="Enter your name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email-input" class="required">Email Address</label>
+                        <input type="email" id="email-input" placeholder="your.email@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="select-input" class="required">Select Option</label>
+                        <select id="select-input">
+                            <option>Choose an option</option>
+                            <option>Residential User</option>
+                            <option>Business Customer</option>
+                            <option>Community</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="textarea-input">Message</label>
+                        <textarea id="textarea-input" placeholder="Tell us about your energy needs..."></textarea>
+                    </div>
+
+                    <h4 style="margin-top: var(--spacing-2xl); color: var(--navy);">Checkboxes</h4>
+                    <div class="checkbox-group" style="margin-top: var(--spacing-base);">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="check1" checked>
+                            <label for="check1" style="margin: 0;">I agree to the terms and conditions</label>
+                        </div>
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="check2">
+                            <label for="check2" style="margin: 0;">Subscribe to energy tips newsletter</label>
+                        </div>
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="check3">
+                            <label for="check3" style="margin: 0;">Enable two-factor authentication</label>
+                        </div>
+                    </div>
+
+                    <h4 style="margin-top: var(--spacing-2xl); color: var(--navy);">Radio Buttons</h4>
+                    <div class="checkbox-group" style="margin-top: var(--spacing-base);">
+                        <div class="checkbox-wrapper">
+                            <input type="radio" id="rad1" name="energy-type" checked>
+                            <label for="rad1" style="margin: 0;">I generate solar energy</label>
+                        </div>
+                        <div class="checkbox-wrapper">
+                            <input type="radio" id="rad2" name="energy-type">
+                            <label for="rad2" style="margin: 0;">I consume energy</label>
+                        </div>
+                        <div class="checkbox-wrapper">
+                            <input type="radio" id="rad3" name="energy-type">
+                            <label for="rad3" style="margin: 0;">I do both (prosumer)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-block"><code>&lt;div class="form-group"&gt;
+  &lt;label for="input" class="required"&gt;Label&lt;/label&gt;
+  &lt;input type="text" id="input" placeholder="..."&gt;
+&lt;/div&gt;
+
+&lt;div class="checkbox-wrapper"&gt;
+  &lt;input type="checkbox" id="check"&gt;
+  &lt;label for="check"&gt;Agreement&lt;/label&gt;
+&lt;/div&gt;
+
+&lt;select&gt;
+  &lt;option&gt;Option 1&lt;/option&gt;
+  &lt;option&gt;Option 2&lt;/option&gt;
+&lt;/select&gt;
+
+&lt;textarea placeholder="..."&gt;&lt;/textarea&gt;</code></div>
+            </section>
+
+            <!-- Cards Section -->
+            <section id="cards">
+                <h2>Cards</h2>
+                <p>Cards are flexible content containers that organize information in digestible, visually distinct blocks. Light cards for standard content, dark cards for hero moments.</p>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Light Cards</h3>
+                <div class="button-grid" style="margin-top: var(--spacing-2xl);">
+                    <div class="card">
+                        <div style="height: 160px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);"></div>
+                        <div class="card-content">
+                            <h3>Energy Trading</h3>
+                            <p>Buy and sell renewable energy directly from your neighbors using our blockchain-powered marketplace.</p>
+                            <button class="btn btn-primary btn-sm">Learn More</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div style="height: 160px; background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);"></div>
+                        <div class="card-content">
+                            <h3>Smart Analytics</h3>
+                            <p>Monitor your energy production and consumption in real-time with AI-powered insights.</p>
+                            <button class="btn btn-secondary btn-sm">Learn More</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div style="height: 160px; background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);"></div>
+                        <div class="card-content">
+                            <h3>Community Rewards</h3>
+                            <p>Earn rewards for contributing to local energy resilience and sustainability goals.</p>
+                            <button class="btn btn-accent btn-sm">Learn More</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-content">
+                            <h3>Get Started</h3>
+                            <p>Join UrbanChain today and become part of the peer-to-peer energy revolution. It takes just 5 minutes.</p>
+                            <button class="btn btn-primary btn-sm">Sign Up Now</button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Dark Hero Cards</h3>
+                <div class="button-grid" style="margin-top: var(--spacing-2xl);">
+                    <div class="card card-dark">
+                        <div class="card-dark-diagonal">
+                            <div class="diagonal-line cyan"></div>
+                            <div class="diagonal-line lime"></div>
+                            <div class="diagonal-line purple"></div>
+                        </div>
+                        <div class="card-content" style="position: relative; z-index: 2;">
+                            <h3>Why UrbanChain?</h3>
+                            <p>We're reimagining how communities generate, trade, and consume renewable energy through decentralized peer-to-peer markets.</p>
+                            <button class="btn btn-primary btn-sm">Discover Our Mission</button>
+                        </div>
+                    </div>
+
+                    <div class="card card-dark">
+                        <div class="card-dark-diagonal">
+                            <div class="diagonal-line cyan"></div>
+                            <div class="diagonal-line lime"></div>
+                            <div class="diagonal-line purple"></div>
+                        </div>
+                        <div class="card-content" style="position: relative; z-index: 2;">
+                            <h3>Join the Revolution</h3>
+                            <p>Over 10,000 users across the UK are already trading renewable energy. Be part of the change.</p>
+                            <button class="btn btn-primary btn-sm">Start Trading</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-block"><code>&lt;!-- Light Card --&gt;
+&lt;div class="card"&gt;
+  &lt;div style="height: 160px; background: ..."&gt;&lt;/div&gt;
+  &lt;div class="card-content"&gt;
+    &lt;h3&gt;Title&lt;/h3&gt;
+    &lt;p&gt;Description...&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Dark Hero Card --&gt;
+&lt;div class="card card-dark"&gt;
+  &lt;div class="card-dark-diagonal"&gt;
+    &lt;div class="diagonal-line cyan"&gt;&lt;/div&gt;
+    &lt;div class="diagonal-line lime"&gt;&lt;/div&gt;
+    &lt;div class="diagonal-line purple"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="card-content"&gt;
+    &lt;h3&gt;Title&lt;/h3&gt;
+    &lt;p&gt;Description...&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></div>
+            </section>
+
+            <!-- Navigation Section -->
+            <section id="navigation">
+                <h2>Navigation</h2>
+                <p>Navigation patterns provide clear pathways through the UrbanChain platform. Our navbar follows familiar patterns while showcasing our brand.</p>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Primary Navigation Bar</h3>
+                <nav style="margin-top: var(--spacing-2xl);">
+                    <div class="nav-logo">UrbanChain</div>
+                    <ul class="nav-links">
+                        <li><a href="#">Home</a></li>
+                        <li><a href="#">Platform</a></li>
+                        <li><a href="#">About</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                    <button class="btn btn-primary btn-sm">Join Now</button>
+                </nav>
+
+                <div class="code-block"><code>&lt;nav&gt;
+  &lt;div class="nav-logo"&gt;UrbanChain&lt;/div&gt;
+  &lt;ul class="nav-links"&gt;
+    &lt;li&gt;&lt;a href="#"&gt;Home&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href="#"&gt;Platform&lt;/a&gt;&lt;/li&gt;
+    &lt;li&gt;&lt;a href="#"&gt;About&lt;/a&gt;&lt;/li&gt;
+  &lt;/ul&gt;
+  &lt;button class="btn btn-primary"&gt;Join Now&lt;/button&gt;
+&lt;/nav&gt;</code></div>
+            </section>
+
+            <!-- Badges & Alerts Section -->
+            <section id="badges">
+                <h2>Badges & Alerts</h2>
+                <p>Use badges to highlight status, categories, and metadata. Use alerts to communicate important messages to users.</p>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Badges</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-base); margin-top: var(--spacing-2xl);">
+                    <span class="badge badge-primary">Primary Badge</span>
+                    <span class="badge badge-secondary">Secondary Badge</span>
+                    <span class="badge badge-accent">Accent Badge</span>
+                    <span class="badge badge-success">Success</span>
+                    <span class="badge badge-error">Error</span>
+                    <span class="badge badge-warning">Warning</span>
+                </div>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Alerts</h3>
+                <div style="margin-top: var(--spacing-2xl); max-width: 600px;">
+                    <div class="alert alert-success">
+                        <strong>Success!</strong> Your energy trade was completed successfully. You earned 5 energy credits.
+                    </div>
+                    <div class="alert alert-error">
+                        <strong>Error!</strong> Unable to process payment. Please check your payment method and try again.
+                    </div>
+                    <div class="alert alert-warning">
+                        <strong>Warning:</strong> You're approaching your monthly energy export limit. Consider purchasing additional capacity.
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Info:</strong> New feature: Real-time energy grid monitoring is now available in your dashboard.
+                    </div>
+                </div>
+
+                <div class="code-block"><code>&lt;!-- Badges --&gt;
+&lt;span class="badge badge-primary"&gt;Badge&lt;/span&gt;
+&lt;span class="badge badge-secondary"&gt;Badge&lt;/span&gt;
+&lt;span class="badge badge-success"&gt;Success&lt;/span&gt;
+&lt;span class="badge badge-error"&gt;Error&lt;/span&gt;
+
+&lt;!-- Alerts --&gt;
+&lt;div class="alert alert-success"&gt;Success message&lt;/div&gt;
+&lt;div class="alert alert-error"&gt;Error message&lt;/div&gt;
+&lt;div class="alert alert-warning"&gt;Warning message&lt;/div&gt;
+&lt;div class="alert alert-info"&gt;Info message&lt;/div&gt;</code></div>
+            </section>
+
+            <!-- Shadows & Effects Section -->
+            <section id="shadows">
+                <h2>Shadows & Elevation</h2>
+                <p>Shadows create depth and hierarchy in our interface. We provide four levels of elevation for different use cases.</p>
+
+                <div class="spacing-showcase" style="margin-top: var(--spacing-3xl);">
+                    <div style="text-align: center;">
+                        <div style="height: 100px; background: var(--white); border-radius: 8px; box-shadow: var(--shadow-sm); margin-bottom: var(--spacing-base);"></div>
+                        <div class="spacing-label">Shadow SM</div>
+                        <p style="font-size: 12px; color: var(--gray-600); margin-top: var(--spacing-sm);">0 1px 2px</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="height: 100px; background: var(--white); border-radius: 8px; box-shadow: var(--shadow-md); margin-bottom: var(--spacing-base);"></div>
+                        <div class="spacing-label">Shadow MD</div>
+                        <p style="font-size: 12px; color: var(--gray-600); margin-top: var(--spacing-sm);">0 4px 6px</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="height: 100px; background: var(--white); border-radius: 8px; box-shadow: var(--shadow-lg); margin-bottom: var(--spacing-base);"></div>
+                        <div class="spacing-label">Shadow LG</div>
+                        <p style="font-size: 12px; color: var(--gray-600); margin-top: var(--spacing-sm);">0 10px 15px</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="height: 100px; background: var(--white); border-radius: 8px; box-shadow: var(--shadow-xl); margin-bottom: var(--spacing-base);"></div>
+                        <div class="spacing-label">Shadow XL</div>
+                        <p style="font-size: 12px; color: var(--gray-600); margin-top: var(--spacing-sm);">0 20px 25px</p>
+                    </div>
+                </div>
+
+                <div class="code-block"><code>/* CSS Shadow Variables */
+--shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+--shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+--shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+--shadow-xl: 0 20px 25px rgba(0,0,0,0.12);
+
+/* Usage */
+box-shadow: var(--shadow-md);</code></div>
+            </section>
+
+            <!-- Guidelines Section -->
+            <section id="guidelines">
+                <h2>Usage Guidelines</h2>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Brand Voice & Tone</h3>
+                <div class="component-showcase" style="margin-top: var(--spacing-2xl);">
+                    <p><strong>Modern & Technical:</strong> We speak the language of energy, blockchain, and sustainability without being overly technical.</p>
+                    <p><strong>Optimistic & Empowering:</strong> We inspire users to take control of their energy future.</p>
+                    <p><strong>Transparent & Honest:</strong> We clearly explain how our platform works and its benefits.</p>
+                    <p><strong>Local & Community-Focused:</strong> We emphasize peer-to-peer, local, and community aspects.</p>
+                </div>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Color Usage Guidelines</h3>
+                <div class="component-showcase" style="margin-top: var(--spacing-2xl);">
+                    <ul style="list-style-position: inside;">
+                        <li><strong>Primary Cyan (#00E5BF):</strong> Use for primary CTAs, active states, highlights, and main interactive elements.</li>
+                        <li><strong>Secondary Purple (#6C5CE7):</strong> Use for secondary actions, accent cards, and alternative CTAs.</li>
+                        <li><strong>Accent Lime (#D4FF00):</strong> Use sparingly for badges, decorative elements, and energy-themed highlights.</li>
+                        <li><strong>Navy (#0D0B2E):</strong> Dark backgrounds for hero sections and dark cards. Use white text.</li>
+                        <li><strong>White & Grays:</strong> Use for text, backgrounds, and neutral elements. Maintain sufficient contrast.</li>
+                    </ul>
+                </div>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Typography Guidelines</h3>
+                <div class="component-showcase" style="margin-top: var(--spacing-2xl);">
+                    <ul style="list-style-position: inside;">
+                        <li>Use Display (64px) for page hero statements.</li>
+                        <li>Use H1 (48px) for main page titles.</li>
+                        <li>Use H2-H3 (36px-28px) for section headings.</li>
+                        <li>Use Body text (16px) for standard paragraph content.</li>
+                        <li>Maintain 1.6 line-height for body text for readability.</li>
+                        <li>Use weights: 400 for body, 600 for headings, 700 for display.</li>
+                    </ul>
+                </div>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Component Best Practices</h3>
+                <div class="component-showcase" style="margin-top: var(--spacing-2xl);">
+                    <ul style="list-style-position: inside;">
+                        <li><strong>Buttons:</strong> Primary cyan for main CTAs. Secondary for alternatives. Pill shape (border-radius: 24px) for prominent actions.</li>
+                        <li><strong>Cards:</strong> Light cards for content. Dark hero cards with diagonal accents for feature announcements.</li>
+                        <li><strong>Forms:</strong> Clear labels, visible focus states (cyan border + light background). Required field indicators with red asterisk.</li>
+                        <li><strong>Spacing:</strong> Maintain consistent spacing using the 4px unit system.</li>
+                        <li><strong>Shadows:</strong> Use md-lg shadows for depth. Avoid excessive shadows.</li>
+                    </ul>
+                </div>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Icon Recommendations</h3>
+                <div class="component-showcase" style="margin-top: var(--spacing-2xl);">
+                    <p>For icons, we recommend using:</p>
+                    <ul style="list-style-position: inside; margin-top: var(--spacing-base);">
+                        <li><strong>Lucide React:</strong> Modern, minimal icon set that matches our aesthetic</li>
+                        <li><strong>Phosphor Icons:</strong> Geometric, clean icons available in multiple weights</li>
+                    </ul>
+                    <p style="margin-top: var(--spacing-base);">Size icons at 24px (standard), 16px (small), 32px (large). Color icons with brand colors or inherit text color.</p>
+                </div>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">Dark Mode Support</h3>
+                <div class="component-showcase" style="margin-top: var(--spacing-2xl);">
+                    <p>All components support dark mode with appropriate color adjustments. Use CSS variables with dark-mode class for consistent theming.</p>
+                    <p style="margin-top: var(--spacing-base);">Test all components in both light and dark modes. Ensure sufficient contrast ratios (WCAG AA or better).</p>
+                </div>
+
+                <h3 style="margin-top: var(--spacing-3xl); color: var(--navy);">DO's and DON'Ts</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--spacing-2xl); margin-top: var(--spacing-2xl);">
+                    <div class="component-showcase">
+                        <h4 style="color: var(--success);">DO</h4>
+                        <ul style="list-style-position: inside; margin-top: var(--spacing-base);">
+                            <li>Use cyan (#00E5BF) as primary color</li>
+                            <li>Maintain consistent spacing (4px unit)</li>
+                            <li>Use DM Sans font family</li>
+                            <li>Include focus states on interactive elements</li>
+                            <li>Support keyboard navigation</li>
+                            <li>Test accessibility (WCAG)</li>
+                            <li>Use semantic HTML</li>
+                        </ul>
+                    </div>
+                    <div class="component-showcase">
+                        <h4 style="color: var(--error);">DON'T</h4>
+                        <ul style="list-style-position: inside; margin-top: var(--spacing-base);">
+                            <li>Mix brand colors arbitrarily</li>
+                            <li>Use inconsistent spacing</li>
+                            <li>Overuse lime accent color</li>
+                            <li>Remove focus indicators</li>
+                            <li>Use poor color contrast</li>
+                            <li>Create custom button styles</li>
+                            <li>Ignore responsive design</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <section style="text-align: center; background: var(--gray-50); margin-top: var(--spacing-6xl);">
+                <p style="color: var(--gray-600);">UrbanChain Design System v1.0</p>
+                <p style="color: var(--gray-600); font-size: 12px; margin-top: var(--spacing-base);">Design tokens and components for the UrbanChain platform. Last updated: February 2025</p>
+                <p style="color: var(--gray-600); font-size: 12px; margin-top: var(--spacing-base);">Built for Manchester's renewable energy future</p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        // Dark mode toggle
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        }
+
+        // Load saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+
+        // Smooth navigation
+        function navigate(event) {
+            event.preventDefault();
+            const href = event.target.getAttribute('href');
+            const target = document.querySelector(href);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+                // Close sidebar on mobile after clicking a link
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.querySelector('.sidebar-overlay');
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+                updateActiveNav();
+            }
+        }
+
+        // Update active nav link
+        function updateActiveNav() {
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.sidebar a');
+
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', updateActiveNav);
+
+        // Copy color to clipboard
+        function copyColor(hex) {
+            navigator.clipboard.writeText(hex).then(() => {
+                const toast = document.createElement('div');
+                toast.textContent = 'Copied: ' + hex;
+                toast.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--primary); color: var(--navy); padding: 12px 20px; border-radius: 8px; font-weight: 600; z-index: 1000; animation: slideDown 0.3s ease-out;';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+            });
+        }
+
+        // Add slideDown animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideDown {
+                from {
+                    opacity: 0;
+                    transform: translateX(-50%) translateY(-20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(-50%) translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
