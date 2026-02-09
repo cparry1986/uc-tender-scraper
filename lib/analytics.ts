@@ -80,31 +80,52 @@ function computeValueBands(tenders: ScoredTender[]): ValueBand[] {
 
 function computeTimeline(tenders: ScoredTender[]): TimelineEntry[] {
   const now = new Date();
-  const weeks: TimelineEntry[] = [];
+  const entries: TimelineEntry[] = [];
 
-  for (let i = 0; i < 12; i++) {
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() + i * 7);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 7);
+  // First 4 weeks: weekly
+  for (let i = 0; i < 4; i++) {
+    const start = new Date(now);
+    start.setDate(now.getDate() + i * 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 7);
 
     const label =
-      i === 0
-        ? "This week"
-        : i === 1
-          ? "Next week"
-          : `Week ${i + 1}`;
+      i === 0 ? "This week" : i === 1 ? "Next week" : `Week ${i + 1}`;
 
     const count = tenders.filter((t) => {
       if (!t.deadlineDate) return false;
       const dl = new Date(t.deadlineDate);
-      return dl >= weekStart && dl < weekEnd;
+      return dl >= start && dl < end;
     }).length;
-
-    weeks.push({ week: label, count });
+    entries.push({ week: label, count });
   }
 
-  return weeks;
+  // Then monthly buckets for the next 18 months
+  const monthNames = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+  for (let m = 1; m <= 18; m++) {
+    const start = new Date(now);
+    start.setMonth(now.getMonth() + m, 1);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setMonth(start.getMonth() + 1);
+
+    const label = `${monthNames[start.getMonth()]} ${start.getFullYear()}`;
+
+    const count = tenders.filter((t) => {
+      if (!t.deadlineDate) return false;
+      const dl = new Date(t.deadlineDate);
+      return dl >= start && dl < end;
+    }).length;
+
+    if (count > 0 || m <= 6) {
+      entries.push({ week: label, count });
+    }
+  }
+
+  return entries;
 }
 
 // ── Buyer type analysis ────────────────────────────────────────────────
@@ -215,6 +236,9 @@ const SOURCE_LABELS: Record<string, string> = {
   sell2wales: "Sell2Wales",
   "d3-tenders": "D3 Tenders",
   "the-chest": "The Chest (NW)",
+  etendersni: "eTendersNI",
+  delta: "Delta eSourcing",
+  "due-north": "Due North Portals",
 };
 
 function computeSourceBreakdown(tenders: ScoredTender[]): SourceBreakdownData[] {

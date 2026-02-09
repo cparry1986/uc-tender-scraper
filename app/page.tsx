@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ScrapeResult } from "@/lib/types";
 import PipelineTab from "./components/pipeline-tab";
 import InsightsTab from "./components/insights-tab";
@@ -8,12 +9,23 @@ import FrameworkTab from "./components/framework-tab";
 
 type Tab = "pipeline" | "insights" | "frameworks";
 
+const DAY_OPTIONS = [
+  { value: 7, label: "7 days" },
+  { value: 14, label: "14 days" },
+  { value: 30, label: "30 days" },
+  { value: 90, label: "3 months" },
+  { value: 180, label: "6 months" },
+  { value: 365, label: "12 months" },
+  { value: 550, label: "18 months" },
+];
+
 export default function Dashboard() {
   const [result, setResult] = useState<ScrapeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [days, setDays] = useState(3);
+  const [days, setDays] = useState(30);
   const [activeTab, setActiveTab] = useState<Tab>("pipeline");
+  const router = useRouter();
 
   async function runScrape() {
     setLoading(true);
@@ -28,6 +40,12 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleLogout() {
+    await fetch("/api/auth", { method: "DELETE" });
+    router.push("/login");
+    router.refresh();
   }
 
   return (
@@ -46,15 +64,15 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-3">
             <label className="text-xs text-slate-400 flex items-center gap-2">
-              Days:
+              Lookback:
               <select
                 value={days}
                 onChange={(e) => setDays(Number(e.target.value))}
                 className="bg-white/[0.06] border border-white/[0.1] rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-uc-teal/50"
               >
-                {[1, 3, 7, 14, 30].map((d) => (
-                  <option key={d} value={d}>
-                    {d}
+                {DAY_OPTIONS.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
                   </option>
                 ))}
               </select>
@@ -71,11 +89,18 @@ export default function Dashboard() {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <span className="inline-block w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
-                  Scraping...
+                  Scraping {days > 90 ? "(deep scan)" : ""}...
                 </span>
               ) : (
                 "Run Scrape"
               )}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="text-xs text-slate-500 hover:text-slate-300 transition-colors px-2 py-1"
+              title="Sign out"
+            >
+              Sign out
             </button>
           </div>
         </div>

@@ -15,7 +15,10 @@ export interface RawTender {
     | "pcs"
     | "sell2wales"
     | "d3-tenders"
-    | "the-chest";
+    | "the-chest"
+    | "etendersni"
+    | "delta"
+    | "due-north";
   url: string;
   cpvCodes: string[];
   isPipeline?: boolean;

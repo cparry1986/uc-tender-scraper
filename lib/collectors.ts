@@ -957,6 +957,448 @@ function parseChestHtml(html: string): RawTender[] {
   return tenders;
 }
 
+// ── eTendersNI (Northern Ireland official portal) ─────────────────────
+
+const NI_QUERIES = [
+  "electricity+supply",
+  "energy+supply",
+  "electricity+framework",
+  "gas+and+electricity",
+  "electricity+contract",
+  "utility+supply",
+  "renewable+energy",
+  "electricity",
+];
+
+async function fetchETendersNI(): Promise<RawTender[]> {
+  const seen = new Map<string, RawTender>();
+
+  for (const q of NI_QUERIES) {
+    const url = `https://etendersni.gov.uk/epps/cft/listContractNotices.do?d-4014458-p=1&selectedList=CURRENT_LIST&keyword=${q}`;
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Accept: "text/html",
+          "User-Agent":
+            "UrbanChain-TenderScraper/2.0 (electricity-supply-monitoring)",
+        },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) continue;
+
+      const html = await res.text();
+      const tenders = parseETendersNIHtml(html);
+      for (const t of tenders) {
+        if (!seen.has(t.id)) {
+          seen.set(t.id, t);
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+function parseETendersNIHtml(html: string): RawTender[] {
+  const tenders: RawTender[] = [];
+  const linkPattern =
+    /<a[^>]+href="[^"]*(?:prepareViewCfTWS|viewContractNotice)[^"]*(?:\?|&amp;)resourceId=(\d+)[^"]*"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+
+  while ((match = linkPattern.exec(html)) !== null) {
+    const resourceId = match[1];
+    const linkText = match[2].replace(/<[^>]+>/g, "").trim();
+    if (!linkText || linkText.length < 10) continue;
+
+    const id = `ni-${resourceId}`;
+    if (tenders.some((t) => t.id === id)) continue;
+
+    const context = html.slice(
+      Math.max(0, match.index - 500),
+      match.index + match[0].length + 500
+    );
+    const buyerMatch = context.match(
+      /(?:buyer|organisation|authority|contracting)[:\s]*([^<\n]{5,80})/i
+    );
+    const valueMatch = context.match(
+      /[\u00A3\xA3]([0-9,.]+)\s*(m|k|million|thousand)?/i
+    );
+    let value: number | null = null;
+    if (valueMatch) {
+      const num = parseFloat(valueMatch[1].replace(/,/g, ""));
+      const mult = valueMatch[2]?.toLowerCase();
+      if (mult === "m" || mult === "million") value = num * 1_000_000;
+      else if (mult === "k" || mult === "thousand") value = num * 1_000;
+      else value = num;
+    }
+    const dateMatch = context.match(
+      /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})/i
+    );
+    const deadlineMatch = context.match(
+      /(?:deadline|closing|closes|return)[:\s]*(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})/i
+    );
+
+    tenders.push({
+      id,
+      title: linkText,
+      description: "",
+      publishedDate: dateMatch
+        ? `${dateMatch[3]}-${monthNum(dateMatch[2])}-${dateMatch[1].padStart(2, "0")}`
+        : "",
+      deadlineDate: deadlineMatch
+        ? `${deadlineMatch[3]}-${monthNum(deadlineMatch[2])}-${deadlineMatch[1].padStart(2, "0")}`
+        : null,
+      value,
+      currency: "GBP",
+      buyer: buyerMatch ? buyerMatch[1].trim() : "",
+      location: "Northern Ireland",
+      source: "etendersni",
+      url: `https://etendersni.gov.uk/epps/cft/prepareViewCfTWS.do?resourceId=${resourceId}`,
+      cpvCodes: [],
+    });
+  }
+
+  return tenders;
+}
+
+// ── Delta eSourcing (multi-council platform) ──────────────────────────
+
+const DELTA_QUERIES = [
+  "electricity supply",
+  "energy supply",
+  "electricity framework",
+  "gas and electricity",
+  "electricity contract",
+  "utility supply",
+  "sleeved",
+  "half hourly",
+  "electricity",
+  "renewable energy",
+];
+
+async function fetchDelta(): Promise<RawTender[]> {
+  const seen = new Map<string, RawTender>();
+
+  for (const q of DELTA_QUERIES) {
+    const url = `https://www.delta-esourcing.com/tenders?keywords=${encodeURIComponent(q)}`;
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Accept: "text/html",
+          "User-Agent":
+            "UrbanChain-TenderScraper/2.0 (electricity-supply-monitoring)",
+        },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) continue;
+
+      const html = await res.text();
+      const tenders = parseDeltaHtml(html);
+      for (const t of tenders) {
+        if (!seen.has(t.id)) {
+          seen.set(t.id, t);
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+function parseDeltaHtml(html: string): RawTender[] {
+  const tenders: RawTender[] = [];
+  const linkPattern =
+    /<a[^>]+href="[^"]*(?:\/tender(?:s|Detail)?\/|viewNotice[^"]*[?&]id=)([a-zA-Z0-9-]+)[^"]*"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+
+  while ((match = linkPattern.exec(html)) !== null) {
+    const tenderId = match[1];
+    const linkText = match[2].replace(/<[^>]+>/g, "").trim();
+    if (!linkText || linkText.length < 10) continue;
+
+    const id = `delta-${tenderId}`;
+    if (tenders.some((t) => t.id === id)) continue;
+
+    const context = html.slice(
+      Math.max(0, match.index - 500),
+      match.index + match[0].length + 500
+    );
+    const buyerMatch = context.match(
+      /(?:buyer|organisation|authority|published\s+by|contracting)[:\s]*([^<\n]{5,80})/i
+    );
+    const valueMatch = context.match(
+      /[\u00A3\xA3]([0-9,.]+)\s*(m|k|million|thousand)?/i
+    );
+    let value: number | null = null;
+    if (valueMatch) {
+      const num = parseFloat(valueMatch[1].replace(/,/g, ""));
+      const mult = valueMatch[2]?.toLowerCase();
+      if (mult === "m" || mult === "million") value = num * 1_000_000;
+      else if (mult === "k" || mult === "thousand") value = num * 1_000;
+      else value = num;
+    }
+    const dateMatch = context.match(
+      /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})/i
+    );
+    const deadlineMatch = context.match(
+      /(?:deadline|closing|closes|return\s+date)[:\s]*(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})/i
+    );
+
+    tenders.push({
+      id,
+      title: linkText,
+      description: "",
+      publishedDate: dateMatch
+        ? `${dateMatch[3]}-${monthNum(dateMatch[2])}-${dateMatch[1].padStart(2, "0")}`
+        : "",
+      deadlineDate: deadlineMatch
+        ? `${deadlineMatch[3]}-${monthNum(deadlineMatch[2])}-${deadlineMatch[1].padStart(2, "0")}`
+        : null,
+      value,
+      currency: "GBP",
+      buyer: buyerMatch ? buyerMatch[1].trim() : "",
+      location: "",
+      source: "delta",
+      url: `https://www.delta-esourcing.com/tenders/${tenderId}`,
+      cpvCodes: [],
+    });
+  }
+
+  return tenders;
+}
+
+// ── Due North / ProContract Regional Portals ──────────────────────────
+
+interface DueNorthPortal {
+  baseUrl: string;
+  name: string;
+  region: string;
+}
+
+const DUE_NORTH_PORTALS: DueNorthPortal[] = [
+  {
+    baseUrl: "https://www.yortender.co.uk/procontract/Opportunities/Index",
+    name: "YORtender",
+    region: "North East / Yorkshire",
+  },
+  {
+    baseUrl: "https://www.supplyingthesouthwest.org.uk/procontract/Opportunities/Index",
+    name: "South West",
+    region: "South West",
+  },
+];
+
+const DUE_NORTH_QUERIES = [
+  "electricity",
+  "energy supply",
+  "electricity supply",
+  "gas and electricity",
+  "utility supply",
+  "renewable energy",
+];
+
+async function fetchDueNorthPortals(): Promise<RawTender[]> {
+  const seen = new Map<string, RawTender>();
+
+  for (const portal of DUE_NORTH_PORTALS) {
+    for (const q of DUE_NORTH_QUERIES.slice(0, 4)) {
+      const url = `${portal.baseUrl}?keywords=${encodeURIComponent(q)}&status=Open`;
+      try {
+        const res = await fetch(url, {
+          headers: {
+            Accept: "text/html",
+            "User-Agent":
+              "UrbanChain-TenderScraper/2.0 (electricity-supply-monitoring)",
+          },
+          signal: AbortSignal.timeout(30000),
+        });
+        if (!res.ok) continue;
+
+        const html = await res.text();
+        const tenders = parseDueNorthHtml(html, portal);
+        for (const t of tenders) {
+          if (!seen.has(t.id)) {
+            seen.set(t.id, t);
+          }
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+function parseDueNorthHtml(html: string, portal: DueNorthPortal): RawTender[] {
+  const tenders: RawTender[] = [];
+  const linkPattern =
+    /<a[^>]+href="[^"]*(?:Opportunity|Detail|Notice)[^"]*[?&](?:id|opportunityId|noticeId)=([a-f0-9-]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+  let match;
+
+  while ((match = linkPattern.exec(html)) !== null) {
+    const opportunityId = match[1];
+    const linkText = match[2].replace(/<[^>]+>/g, "").trim();
+    if (!linkText || linkText.length < 10) continue;
+
+    const id = `dn-${portal.name.replace(/\s+/g, "").toLowerCase()}-${opportunityId}`;
+    if (tenders.some((t) => t.id === id)) continue;
+
+    const context = html.slice(
+      Math.max(0, match.index - 500),
+      match.index + match[0].length + 500
+    );
+    const buyerMatch = context.match(
+      /(?:buyer|organisation|authority|published\s+by)[:\s]*([^<\n]{5,80})/i
+    );
+    const valueMatch = context.match(
+      /[\u00A3\xA3]([0-9,.]+)\s*(m|k|million|thousand)?/i
+    );
+    let value: number | null = null;
+    if (valueMatch) {
+      const num = parseFloat(valueMatch[1].replace(/,/g, ""));
+      const mult = valueMatch[2]?.toLowerCase();
+      if (mult === "m" || mult === "million") value = num * 1_000_000;
+      else if (mult === "k" || mult === "thousand") value = num * 1_000;
+      else value = num;
+    }
+    const dateMatch = context.match(
+      /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})/i
+    );
+    const deadlineMatch = context.match(
+      /(?:deadline|closing|closes|return\s+date)[:\s]*(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{4})/i
+    );
+
+    tenders.push({
+      id,
+      title: linkText,
+      description: "",
+      publishedDate: dateMatch
+        ? `${dateMatch[3]}-${monthNum(dateMatch[2])}-${dateMatch[1].padStart(2, "0")}`
+        : "",
+      deadlineDate: deadlineMatch
+        ? `${deadlineMatch[3]}-${monthNum(deadlineMatch[2])}-${deadlineMatch[1].padStart(2, "0")}`
+        : null,
+      value,
+      currency: "GBP",
+      buyer: buyerMatch ? buyerMatch[1].trim() : "",
+      location: portal.region,
+      source: "due-north",
+      url: `${portal.baseUrl.replace(/\/Index$/, "")}/Opportunity?id=${opportunityId}`,
+      cpvCodes: [],
+    });
+  }
+
+  return tenders;
+}
+
+// ── Contracts Finder Awards (historical intelligence) ────────────────
+
+async function fetchContractsFinderAwards(days: number): Promise<AwardNotice[]> {
+  const awards: AwardNotice[] = [];
+  const since = daysAgoISO(Math.max(days, 180));
+  const until = todayISO();
+
+  let cursor: string | null = null;
+  const maxPages = 3;
+
+  for (let page = 0; page < maxPages; page++) {
+    let url =
+      `https://www.contractsfinder.service.gov.uk/Published/Notices/OCDS/Search?` +
+      `publishedFrom=${since}&publishedTo=${until}&limit=100`;
+    if (cursor) {
+      url += `&cursor=${encodeURIComponent(cursor)}`;
+    }
+
+    try {
+      const res = await fetch(url, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) break;
+
+      const data = await res.json();
+      const releases = data.releases || [];
+      if (releases.length === 0) break;
+
+      for (const r of releases) {
+        const tender = (r.tender || {}) as Record<string, unknown>;
+        const buyer = (r.buyer || {}) as Record<string, unknown>;
+        const title = String(tender.title || r.title || "");
+        const text = `${title} ${String(tender.description || "")}`.toLowerCase();
+
+        if (
+          !/electricity|energy\s+supply|gas\s+and\s+electric|utility\s+supply|half[\s-]?hourly|sleeved|renewable\s+energy|power\s+purchase/.test(
+            text
+          )
+        )
+          continue;
+
+        const awardList = Array.isArray(r.awards) ? r.awards : [];
+        if (awardList.length === 0) continue;
+
+        const ocid = String(r.ocid || r.id || "");
+        const deliveryAddresses = Array.isArray(tender.deliveryAddresses)
+          ? tender.deliveryAddresses
+          : [];
+        const location =
+          deliveryAddresses.length > 0
+            ? String(
+                (deliveryAddresses[0] as Record<string, unknown>).region ||
+                  (deliveryAddresses[0] as Record<string, unknown>).locality ||
+                  ""
+              )
+            : "";
+
+        for (const aw of awardList) {
+          const a = aw as Record<string, unknown>;
+          const suppliers = Array.isArray(a.suppliers) ? a.suppliers : [];
+          const winner =
+            suppliers.length > 0
+              ? String(
+                  (suppliers[0] as Record<string, unknown>).name || "Unknown"
+                )
+              : "Unknown";
+          const valueObj = (a.value || {}) as Record<string, unknown>;
+          const value = Number(valueObj.amount || 0) || null;
+          const awardDate = String(a.date || r.datePublished || "");
+
+          awards.push({
+            title,
+            buyer: String(buyer.name || ""),
+            winner,
+            value,
+            awardDate,
+            region: location,
+            url: `https://www.contractsfinder.service.gov.uk/Notice/${ocid}`,
+          });
+        }
+      }
+
+      const nextLink = data.links?.next || data.next || null;
+      if (!nextLink) break;
+      try {
+        const nextUrl = new URL(
+          nextLink,
+          "https://www.contractsfinder.service.gov.uk"
+        );
+        cursor = nextUrl.searchParams.get("cursor");
+        if (!cursor) break;
+      } catch {
+        break;
+      }
+    } catch {
+      break;
+    }
+  }
+
+  return awards;
+}
+
 // ── Deduplication ──────────────────────────────────────────────────────
 
 function dedup(tenders: RawTender[]): RawTender[] {
@@ -988,17 +1430,25 @@ export async function collectTenders(days: number): Promise<CollectionResult> {
     s2wResult,
     d3Result,
     chestResult,
-    awardsResult,
+    niResult,
+    deltaResult,
+    dueNorthResult,
+    ftsAwardsResult,
+    cfAwardsResult,
   ] = await Promise.allSettled([
     fetchFindATender(days),
-    fetchFindATenderPipeline(Math.max(days, 14)),
+    fetchFindATenderPipeline(Math.max(days, 30)),
     fetchContractsFinder(days),
     fetchBidstats(),
     fetchPCS(),
     fetchSell2Wales(),
     fetchD3Tenders(),
     fetchTheChest(),
+    fetchETendersNI(),
+    fetchDelta(),
+    fetchDueNorthPortals(),
     fetchFTSAwards(),
+    fetchContractsFinderAwards(days),
   ]);
 
   const fatTenders =
@@ -1019,6 +1469,12 @@ export async function collectTenders(days: number): Promise<CollectionResult> {
     d3Result.status === "fulfilled" ? d3Result.value : [];
   const chestTenders =
     chestResult.status === "fulfilled" ? chestResult.value : [];
+  const niTenders =
+    niResult.status === "fulfilled" ? niResult.value : [];
+  const deltaTenders =
+    deltaResult.status === "fulfilled" ? deltaResult.value : [];
+  const dueNorthTenders =
+    dueNorthResult.status === "fulfilled" ? dueNorthResult.value : [];
 
   const sourceHealth: SourceHealth[] = [
     {
@@ -1061,6 +1517,21 @@ export async function collectTenders(days: number): Promise<CollectionResult> {
       ok: chestResult.status === "fulfilled",
       count: chestTenders.length,
     },
+    {
+      name: "eTendersNI",
+      ok: niResult.status === "fulfilled",
+      count: niTenders.length,
+    },
+    {
+      name: "Delta eSourcing",
+      ok: deltaResult.status === "fulfilled",
+      count: deltaTenders.length,
+    },
+    {
+      name: "Due North Portals",
+      ok: dueNorthResult.status === "fulfilled",
+      count: dueNorthTenders.length,
+    },
   ];
 
   const all = [
@@ -1072,10 +1543,29 @@ export async function collectTenders(days: number): Promise<CollectionResult> {
     ...s2wTenders,
     ...d3Tenders,
     ...chestTenders,
+    ...niTenders,
+    ...deltaTenders,
+    ...dueNorthTenders,
   ];
   const deduped = dedup(all);
-  const recentAwards =
-    awardsResult.status === "fulfilled" ? awardsResult.value : [];
+
+  // Merge awards from both FTS and Contracts Finder
+  const ftsAwards =
+    ftsAwardsResult.status === "fulfilled" ? ftsAwardsResult.value : [];
+  const cfAwards =
+    cfAwardsResult.status === "fulfilled" ? cfAwardsResult.value : [];
+  const allAwards = [...ftsAwards, ...cfAwards];
+
+  // Deduplicate awards
+  const seenAwards = new Set<string>();
+  const recentAwards = allAwards
+    .filter((a) => {
+      const key = `${a.title.toLowerCase()}|${a.buyer.toLowerCase()}`;
+      if (seenAwards.has(key)) return false;
+      seenAwards.add(key);
+      return true;
+    })
+    .sort((a, b) => (b.awardDate || "").localeCompare(a.awardDate || ""));
 
   return { tenders: deduped, sourceHealth, recentAwards };
 }

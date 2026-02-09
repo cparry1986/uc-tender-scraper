@@ -45,6 +45,9 @@ const SOURCE_LABELS: Record<string, string> = {
   sell2wales: "Sell2Wales",
   "d3-tenders": "D3 Tenders",
   "the-chest": "The Chest (NW)",
+  etendersni: "eTendersNI",
+  delta: "Delta eSourcing",
+  "due-north": "Due North Portals",
 };
 
 const DIMENSION_COLORS = [
